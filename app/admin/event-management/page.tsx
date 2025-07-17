@@ -31,13 +31,20 @@ type Event = {
   isActive: boolean;
 };
 
+type Meta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
 export default function EventManagementPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [meta, setMeta] = useState<any>(null);
+  const [meta, setMeta] = useState<Meta | null>(null);
   const [sortKey, setSortKey] = useState<keyof Event>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
@@ -52,7 +59,7 @@ export default function EventManagementPage() {
 
   useEffect(() => {
     fetchEvents();
-  }, [search, page, sortKey, sortOrder]);
+  }, [search, page, fetchEvents]);
 
   const handleAddEvent = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -123,14 +130,6 @@ export default function EventManagementPage() {
     return 0;
   });
 
-  const handleSort = (key: keyof Event) => {
-    if (sortKey === key) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortKey(key);
-      setSortOrder("asc");
-    }
-  };
 
   return (
     <div className="p-6">

@@ -1,29 +1,10 @@
 "use client";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Pencil, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useStatistics } from "@/hooks/use-statistics";
-import Papa from "papaparse";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
@@ -35,32 +16,40 @@ type BroadcastTemplate = {
   content: string;
 };
 
+type Meta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
 export default function BroadcastTemplatePage() {
   const [templates, setTemplates] = useState<BroadcastTemplate[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { selectedEventId, isLoading } = useStatistics();
+  const { selectedEventId } = useStatistics();
   const [activeTab, setActiveTab] = useState("whatsapp");
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [meta, setMeta] = useState<any>(null);
+  const [meta, setMeta] = useState<Meta | null>(null);
 
-  const fetchTemplates = () => {
+  const fetchTemplates = useCallback(() => {
     if (selectedEventId) {
       fetch(
-        `/api/events/${selectedEventId}/broadcast-templates?search=${search}&page=${page}`
+        `/api/events/${selectedEventId}/broadcast-templates?search=${search}&page=${page}&type=${activeTab}`
       )
         .then((res) => res.json())
         .then((data) => {
-          setTemplates(data.data);
+          setTemplates(data.data || []);
           setMeta(data.meta);
         });
     }
-  };
+  }, [selectedEventId, search, page, activeTab]);
 
   useEffect(() => {
-    fetchTemplates();
-  }, [selectedEventId, search, page]);
+    if (selectedEventId) {
+      fetchTemplates();
+    }
+  }, [fetchTemplates, selectedEventId]);
 
   const handleDelete = async (templateId: string) => {
     Swal.fire({
@@ -85,33 +74,14 @@ export default function BroadcastTemplatePage() {
     });
   };
 
-  const handleAddTemplate = async (
-    event: React.FormEvent<HTMLFormElement>
-  ) => {
-    event.preventDefault();
-    if (!selectedEventId) {
-      console.error("Event ID is not available.");
-      return;
-    }
-    const formData = new FormData(event.currentTarget);
-    const data = Object.fromEntries(formData.entries());
-
-    await fetch(`/api/events/${selectedEventId}/broadcast-templates`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ ...data, type: activeTab }),
-    });
-
-    fetchTemplates();
-    setIsDialogOpen(false);
-  };
-
   return (
-    <div className="p-6">
+    <div className="p-6 bg-gray-50 min-h-screen">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Broadcast Template</h1>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          <i className="fab fa-whatsapp text-green-500"></i>
+          <i className="far fa-envelope"></i>
+          Broadcast Template
+        </h1>
         <div className="flex items-center gap-2">
           <Input
             placeholder="Search..."
@@ -121,59 +91,63 @@ export default function BroadcastTemplatePage() {
           />
         </div>
       </div>
-      <div className="flex gap-2 mb-6">
-        <Button
-          variant={activeTab === "whatsapp" ? "default" : "outline"}
+      <div className="flex border-b">
+        <button
+          className={`py-2 px-4 text-sm font-medium ${
+            activeTab === "whatsapp"
+              ? "border-b-2 border-blue-500 text-blue-600"
+              : "text-gray-500"
+          }`}
           onClick={() => setActiveTab("whatsapp")}
         >
           Show Template for Whatsapp
-        </Button>
-        <Button
-          variant={activeTab === "email" ? "default" : "outline"}
+        </button>
+        <button
+          className={`py-2 px-4 text-sm font-medium ${
+            activeTab === "email"
+              ? "border-b-2 border-blue-500 text-blue-600"
+              : "text-gray-500"
+          }`}
           onClick={() => setActiveTab("email")}
         >
           Show Template for Email
-        </Button>
+        </button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="col-span-1">
-          <Link href="/admin/broadcast/add">
-            <Button variant="outline" className="w-full h-32">
-              <Plus className="mr-2 h-4 w-4" /> Add Template
-            </Button>
-          </Link>
-        </div>
-        {templates
-          .filter((template) => template.type === activeTab)
-          .map((template, index) => (
-            <div key={template.id} className="col-span-1">
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h2 className="font-bold">
-                  {index + 1}. {template.name}
-                </h2>
-                <p className="text-sm text-gray-500">{template.content}</p>
-                <div className="mt-4 flex justify-end">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mr-2"
-                    onClick={() =>
-                      router.push(`/admin/broadcast/edit/${template.id}`)
-                    }
-                  >
-                    <Pencil className="mr-2 h-4 w-4" /> Edit
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDelete(template.id)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                  </Button>
-                </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
+        <Link href="/admin/broadcast/add">
+          <div
+            className="w-full min-h-[12rem] h-full bg-cover bg-center rounded-lg shadow-md flex items-center justify-center cursor-pointer"
+            style={{ backgroundImage: "url('/wa-bg.png')" }}
+          >
+            <div className="bg-green-100 text-green-800 rounded-full px-4 py-2 border border-green-300">
+              Add Template
+            </div>
+          </div>
+        </Link>
+        {templates.map((template) => (
+          <div key={template.id} className="bg-white p-4 rounded-lg shadow-md">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-bold text-sm">{template.name}</h3>
+              <div className="flex gap-2">
+                <Pencil
+                  className="h-4 w-4 text-gray-500 cursor-pointer"
+                  onClick={() =>
+                    router.push(`/admin/broadcast/edit/${template.id}`)
+                  }
+                />
+                <Trash2
+                  className="h-4 w-4 text-red-500 cursor-pointer"
+                  onClick={() => handleDelete(template.id)}
+                />
               </div>
             </div>
-          ))}
+            <div className="bg-cover bg-center p-4 rounded-md" style={{ backgroundImage: "url('/wa-bg.png')" }}>
+              <div className="bg-white p-3 rounded-lg shadow-sm">
+                <p className="text-xs text-gray-800" dangerouslySetInnerHTML={{ __html: template.content.replace(/\n/g, '<br />') }}></p>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
       <div className="flex justify-end items-center gap-2 mt-4">
         <Button

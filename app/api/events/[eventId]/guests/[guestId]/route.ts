@@ -5,14 +5,13 @@ import {
 } from "@/lib/services/guestService";
 import { jwtVerify } from "jose";
 import { apiResponse } from "@/lib/api-response";
+import { guestSchema } from "@/lib/validations";
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET || "your-secret-key"
-);
+const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { guestId: string } }
+  { params }: { params: Promise<{ guestId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -23,7 +22,12 @@ export async function PUT(
   try {
     await jwtVerify(token, secret);
     const body = await req.json();
-    const guest = await updateGuest(params.guestId, body);
+    const validation = guestSchema.safeParse(body);
+    if (!validation.success) {
+      return apiResponse("error", "Invalid input", null, validation.error.errors, null, 400);
+    }
+    const { guestId } = await params;
+    const guest = await updateGuest(guestId, validation.data);
     return apiResponse(
       "success",
       "Guest updated successfully",
@@ -42,7 +46,7 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { guestId: string } }
+  { params }: { params: Promise<{ guestId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -52,7 +56,8 @@ export async function DELETE(
 
   try {
     await jwtVerify(token, secret);
-    await deleteGuest(params.guestId);
+    const { guestId } = await params;
+    await deleteGuest(guestId);
     return apiResponse(
       "success",
       "Guest deleted successfully",

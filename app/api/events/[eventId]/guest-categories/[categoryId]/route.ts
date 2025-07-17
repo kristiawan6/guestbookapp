@@ -6,14 +6,13 @@ import {
 } from "@/lib/services/guestCategoryService";
 import { jwtVerify } from "jose";
 import { apiResponse } from "@/lib/api-response";
+import { guestCategorySchema } from "@/lib/validations";
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET || "your-secret-key"
-);
+const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { categoryId: string } }
+  { params }: { params: Promise<{ categoryId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -23,7 +22,8 @@ export async function GET(
 
   try {
     await jwtVerify(token, secret);
-    const guestCategory = await getGuestCategoryById(params.categoryId);
+    const { categoryId } = await params;
+    const guestCategory = await getGuestCategoryById(categoryId);
     return apiResponse(
       "success",
       "Guest category retrieved successfully",
@@ -42,7 +42,7 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { categoryId: string } }
+  { params }: { params: Promise<{ categoryId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -53,7 +53,12 @@ export async function PUT(
   try {
     await jwtVerify(token, secret);
     const body = await req.json();
-    const guestCategory = await updateGuestCategory(params.categoryId, body);
+    const validation = guestCategorySchema.safeParse(body);
+    if (!validation.success) {
+      return apiResponse("error", "Invalid input", null, validation.error.errors, null, 400);
+    }
+    const { categoryId } = await params;
+    const guestCategory = await updateGuestCategory(categoryId, validation.data);
     return apiResponse(
       "success",
       "Guest category updated successfully",
@@ -72,7 +77,7 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { categoryId: string } }
+  { params }: { params: Promise<{ categoryId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -82,7 +87,8 @@ export async function DELETE(
 
   try {
     await jwtVerify(token, secret);
-    await deleteGuestCategory(params.categoryId);
+    const { categoryId } = await params;
+    await deleteGuestCategory(categoryId);
     return new NextResponse(null, { status: 204 });
   } catch (err) {
     if (err instanceof Error) {

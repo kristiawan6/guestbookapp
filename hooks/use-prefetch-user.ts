@@ -14,15 +14,22 @@ const fetchUser = async () => {
 export const usePrefetchUser = () => {
   const queryClient = useQueryClient();
 
+  const hasToken =
+    typeof window !== "undefined" &&
+    document.cookie.split("; ").some((row) => row.startsWith("token="));
+
   useEffect(() => {
-    queryClient.prefetchQuery({
-      queryKey: ["user"],
-      queryFn: fetchUser,
-    });
-  }, [queryClient]);
+    if (hasToken) {
+      queryClient.prefetchQuery({
+        queryKey: ["user"],
+        queryFn: fetchUser,
+      });
+    }
+  }, [queryClient, hasToken]);
 
   return useQuery({
     queryKey: ["user"],
     queryFn: fetchUser,
+    enabled: hasToken,
   });
 };

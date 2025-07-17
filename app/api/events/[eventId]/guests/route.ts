@@ -2,14 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createGuest, getGuests } from "@/lib/services/guestService";
 import { jwtVerify } from "jose";
 import { apiResponse } from "@/lib/api-response";
+import { guestSchema } from "@/lib/validations";
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET || "your-secret-key"
-);
+const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -23,7 +22,7 @@ export async function GET(
     const page = req.nextUrl.searchParams.get("page");
     const limit = req.nextUrl.searchParams.get("limit");
     const guests = await getGuests(
-      params.eventId,
+      (await params).eventId,
       search || undefined,
       page ? Number(page) : 1,
       limit ? Number(limit) : 10
@@ -43,7 +42,7 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -54,7 +53,12 @@ export async function POST(
   try {
     await jwtVerify(token, secret);
     const body = await req.json();
-    const guest = await createGuest(params.eventId, body);
+    const validation = guestSchema.safeParse(body);
+    if (!validation.success) {
+      return apiResponse("error", "Invalid input", null, validation.error.errors, null, 400);
+    }
+    const { eventId } = await params;
+    const guest = await createGuest(eventId, validation.data);
     return apiResponse(
       "success",
       "Guest created successfully",

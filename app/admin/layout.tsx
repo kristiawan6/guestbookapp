@@ -8,8 +8,6 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarFooter,
-  SidebarTrigger,
   useSidebar,
   SidebarInset,
 } from "@/components/ui/sidebar";
@@ -34,49 +32,65 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useStatistics } from "@/hooks/use-statistics";
 import { Button } from "@/components/ui/button";
+import { logout } from "@/app/auth/logout/actions";
+import Image from "next/image";
+
+type Event = {
+  id: string;
+  name: string;
+};
 
 const menuItems = [
   {
     href: "/admin/dashboard",
     icon: Home,
     label: "Dashboard",
+    color: "text-blue-500",
   },
   {
     href: "/admin/broadcast",
     icon: FileText,
     label: "Broadcast Template",
+    color: "text-purple-500",
   },
   {
     href: "/admin/guest-categories",
     icon: Users,
     label: "Guest Category",
+    color: "text-red-500",
   },
   {
     href: "/admin/guests",
     icon: Users,
     label: "Guests",
+    color: "text-gray-500",
   },
   {
     href: "/admin/guest-statistic",
     icon: BarChart,
     label: "Guest Statistic",
+    color: "text-purple-500",
   },
   {
     href: "/admin/claim-souvenir",
     icon: Gift,
     label: "Claim Souvenir & etc",
+    color: "text-blue-500",
   },
   {
     href: "/admin/guestbook",
     icon: Book,
     label: "Guestbook",
+    color: "text-blue-500",
   },
   {
     href: "/admin/web-invitation",
     icon: Globe,
     label: "Web Invitation",
+    color: "text-yellow-500",
   },
 ];
 
@@ -85,7 +99,7 @@ function Header() {
     useStatistics();
   const { toggleSidebar } = useSidebar();
 
-  const selectedEvent = events?.find((event: any) => event.id === selectedEventId);
+  const selectedEvent = events?.find((event: Event) => event.id === selectedEventId);
 
   return (
     <header className="relative z-10 flex items-center justify-between p-4 bg-white shadow-sm">
@@ -103,7 +117,7 @@ function Header() {
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            {events?.map((event: any) => (
+            {events?.map((event: Event) => (
               <DropdownMenuItem
                 key={event.id}
                 onSelect={() => setSelectedEventId(event.id)}
@@ -126,10 +140,14 @@ function Header() {
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuItem>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Logout</span>
-            </DropdownMenuItem>
+            <form action={logout}>
+              <button type="submit" className="w-full text-left">
+                <DropdownMenuItem>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Logout</span>
+                </DropdownMenuItem>
+              </button>
+            </form>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -143,19 +161,20 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const { user } = useStatistics();
+  const pathname = usePathname();
   return (
     <SidebarProvider className="flex min-h-screen bg-gray-50">
       <Sidebar>
         <SidebarHeader>
-          <h1 className="text-2xl font-bold">MIGUNESIA</h1>
+          <Image src="/logo.svg" alt="Migunesia Logo" width={150} height={40} />
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <Link href={item.href}>
-                  <SidebarMenuButton>
-                    <item.icon className="h-5 w-5" />
+                  <SidebarMenuButton isActive={pathname === item.href}>
+                    <item.icon className={`h-5 w-5 ${item.color}`} />
                     {item.label}
                   </SidebarMenuButton>
                 </Link>
@@ -164,7 +183,9 @@ export default function AdminLayout({
             {user?.role === "SuperAdmin" && (
               <SidebarMenuItem>
                 <Link href="/admin/event-management">
-                  <SidebarMenuButton>
+                  <SidebarMenuButton
+                    isActive={pathname === "/admin/event-management"}
+                  >
                     <Shield className="h-5 w-5" />
                     Event Management
                   </SidebarMenuButton>

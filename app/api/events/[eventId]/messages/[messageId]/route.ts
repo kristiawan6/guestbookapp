@@ -6,13 +6,11 @@ import {
 import { jwtVerify } from "jose";
 import { apiResponse } from "@/lib/api-response";
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET || "your-secret-key"
-);
+const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { messageId: string } }
+  { params }: { params: Promise<{ messageId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -23,7 +21,8 @@ export async function PUT(
   try {
     await jwtVerify(token, secret);
     const body = await req.json();
-    const message = await updateMessage(params.messageId, body);
+    const { messageId } = await params;
+    const message = await updateMessage(messageId, body);
     return apiResponse(
       "success",
       "Message updated successfully",
@@ -42,7 +41,7 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { messageId: string } }
+  { params }: { params: Promise<{ messageId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -52,7 +51,8 @@ export async function DELETE(
 
   try {
     await jwtVerify(token, secret);
-    await deleteMessage(params.messageId);
+    const { messageId } = await params;
+    await deleteMessage(messageId);
     return apiResponse(
       "success",
       "Message deleted successfully",

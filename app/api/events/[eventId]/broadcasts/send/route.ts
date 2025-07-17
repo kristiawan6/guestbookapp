@@ -8,7 +8,7 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-k
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -42,13 +42,13 @@ export async function POST(
 
     if (recipientType === "all") {
       recipients = await prisma.guest.findMany({
-        where: { eventId: params.eventId },
+        where: { eventId: (await params).eventId },
         select: { email: true, phoneNumber: true },
       });
     } else if (recipientType === "category") {
       recipients = await prisma.guest.findMany({
         where: {
-          eventId: params.eventId,
+          eventId: (await params).eventId,
           guestCategoryId: { in: recipientIds },
         },
         select: { email: true, phoneNumber: true },
@@ -56,7 +56,7 @@ export async function POST(
     } else if (recipientType === "individual") {
       recipients = await prisma.guest.findMany({
         where: {
-          eventId: params.eventId,
+          eventId: (await params).eventId,
           id: { in: recipientIds },
         },
         select: { email: true, phoneNumber: true },

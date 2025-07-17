@@ -5,14 +5,13 @@ import {
 } from "@/lib/services/claimService";
 import { jwtVerify } from "jose";
 import { apiResponse } from "@/lib/api-response";
+import { claimableItemSchema } from "@/lib/validations";
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET || "your-secret-key"
-);
+const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { itemId: string } }
+  { params }: { params: Promise<{ itemId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -23,7 +22,12 @@ export async function PUT(
   try {
     await jwtVerify(token, secret);
     const body = await req.json();
-    const item = await updateClaimableItem(params.itemId, body);
+    const validation = claimableItemSchema.safeParse(body);
+    if (!validation.success) {
+      return apiResponse("error", "Invalid input", null, validation.error.errors, null, 400);
+    }
+    const { itemId } = await params;
+    const item = await updateClaimableItem(itemId, validation.data);
     return apiResponse(
       "success",
       "Claimable item updated successfully",
@@ -42,7 +46,7 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { itemId: string } }
+  { params }: { params: Promise<{ itemId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -52,7 +56,8 @@ export async function DELETE(
 
   try {
     await jwtVerify(token, secret);
-    await deleteClaimableItem(params.itemId);
+    const { itemId } = await params;
+    await deleteClaimableItem(itemId);
     return apiResponse(
       "success",
       "Claimable item deleted successfully",

@@ -82,6 +82,13 @@ type GuestCategory = {
   name: string;
 };
 
+type Meta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
 export default function GuestPage() {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [guestCategories, setGuestCategories] = useState<GuestCategory[]>([]);
@@ -91,7 +98,7 @@ export default function GuestPage() {
   const { selectedEventId, isLoading } = useStatistics();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [meta, setMeta] = useState<any>(null);
+  const [meta, setMeta] = useState<Meta | null>(null);
   const [sortKey, setSortKey] = useState<keyof Guest>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 

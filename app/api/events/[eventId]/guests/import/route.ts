@@ -3,13 +3,11 @@ import { importGuests } from "@/lib/services/guestService";
 import { jwtVerify } from "jose";
 import { apiResponse } from "@/lib/api-response";
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET || "your-secret-key"
-);
+const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -22,7 +20,8 @@ export async function POST(
     const formData = await req.formData();
     const file = formData.get("file") as File;
     const buffer = Buffer.from(await file.arrayBuffer());
-    const result = await importGuests(params.eventId, buffer);
+    const { eventId } = await params;
+    const result = await importGuests(eventId, buffer);
     return apiResponse(
       "success",
       "Guests imported successfully",

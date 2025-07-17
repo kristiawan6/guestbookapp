@@ -1,6 +1,12 @@
 import prisma from "@/lib/prisma";
 
-export const createEvent = async (data: any) => {
+interface EventData {
+  name: string;
+  description?: string;
+  isActive?: boolean;
+}
+
+export const createEvent = async (data: EventData) => {
   const { name, description, isActive } = data;
 
   if (!name) {
@@ -23,7 +29,12 @@ export const getEvents = async (
   page: number = 1,
   limit: number = 10
 ) => {
-  const where: any = {};
+  const where: {
+    OR?: (
+      | { name: { contains: string; mode: "insensitive" } }
+      | { description: { contains: string; mode: "insensitive" } }
+    )[];
+  } = {};
   if (search) {
     where.OR = [
       { name: { contains: search, mode: "insensitive" } },
@@ -31,13 +42,14 @@ export const getEvents = async (
     ];
   }
 
-  const events = await prisma.event.findMany({
-    where,
-    skip: (page - 1) * limit,
-    take: limit,
-  });
-
-  const total = await prisma.event.count({ where });
+  const [events, total] = await prisma.$transaction([
+    prisma.event.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.event.count({ where }),
+  ]);
 
   return {
     data: events,
@@ -57,7 +69,7 @@ export const getEventById = async (id: string) => {
   return event;
 };
 
-export const updateEvent = async (id: string, data: any) => {
+export const updateEvent = async (id: string, data: Partial<EventData>) => {
   const { name, description, isActive } = data;
 
   const updatedEvent = await prisma.event.update({

@@ -42,6 +42,13 @@ type GuestCategory = {
   eventId: string;
 };
 
+type Meta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
 export default function GuestCategoryPage() {
   const [guestCategories, setGuestCategories] = useState<GuestCategory[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -50,7 +57,7 @@ export default function GuestCategoryPage() {
   const { selectedEventId, isLoading } = useStatistics();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [meta, setMeta] = useState<any>(null);
+  const [meta, setMeta] = useState<Meta | null>(null);
   const [sortKey, setSortKey] = useState<keyof GuestCategory>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
@@ -68,8 +75,10 @@ export default function GuestCategoryPage() {
   };
 
   useEffect(() => {
-    fetchGuestCategories();
-  }, [selectedEventId, search, page, sortKey, sortOrder]);
+    if (selectedEventId) {
+      fetchGuestCategories();
+    }
+  }, [selectedEventId, search, page, fetchGuestCategories]);
 
   const handleAddCategory = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

@@ -1,6 +1,12 @@
 import prisma from "@/lib/prisma";
 
-export const createMessage = async (eventId: string, data: any) => {
+interface MessageData {
+  name: string;
+  email?: string;
+  content: string;
+}
+
+export const createMessage = async (eventId: string, data: MessageData) => {
   const { name, email, content } = data;
 
   if (!name || !content) {
@@ -38,7 +44,13 @@ export const getMessages = async (
   page: number = 1,
   limit: number = 10
 ) => {
-  const where: any = { eventId };
+  const where: {
+    eventId: string;
+    OR?: (
+      | { content: { contains: string; mode: "insensitive" } }
+      | { guest: { name: { contains: string; mode: "insensitive" } } }
+    )[];
+  } = { eventId };
   if (search) {
     where.OR = [
       { content: { contains: search, mode: "insensitive" } },
@@ -82,7 +94,10 @@ export const updateMessageStatus = async (id: string, approved: boolean) => {
   return updatedMessage;
 };
 
-export const updateMessage = async (id: string, data: any) => {
+export const updateMessage = async (
+  id: string,
+  data: Partial<{ content: string; approved: boolean }>
+) => {
   const { content, approved } = data;
 
   const updatedMessage = await prisma.message.update({

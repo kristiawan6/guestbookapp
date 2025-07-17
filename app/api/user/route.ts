@@ -3,9 +3,7 @@ import { jwtVerify } from "jose";
 import prisma from "@/lib/prisma";
 import { apiResponse } from "@/lib/api-response";
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET || "your-secret-key"
-);
+const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get("token")?.value;

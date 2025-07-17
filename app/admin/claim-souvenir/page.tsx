@@ -7,7 +7,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -38,6 +38,13 @@ type ClaimableItem = {
   remainingQuantity: number;
 };
 
+type Meta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
 export default function ClaimSouvenirPage() {
   const [items, setItems] = useState<ClaimableItem[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -47,11 +54,11 @@ export default function ClaimSouvenirPage() {
   const { selectedEventId, isLoading } = useStatistics();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [meta, setMeta] = useState<any>(null);
+  const [meta, setMeta] = useState<Meta | null>(null);
   const [sortKey, setSortKey] = useState<keyof ClaimableItem>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const fetchItems = () => {
+  const fetchItems = useCallback(() => {
     if (selectedEventId) {
       fetch(
         `/api/events/${selectedEventId}/claimable-items?search=${search}&page=${page}`
@@ -62,11 +69,13 @@ export default function ClaimSouvenirPage() {
           setMeta(data.meta);
         });
     }
-  };
+  }, [selectedEventId, search, page]);
 
   useEffect(() => {
-    fetchItems();
-  }, [selectedEventId, search, page, sortKey, sortOrder]);
+    if (selectedEventId) {
+      fetchItems();
+    }
+  }, [fetchItems, selectedEventId, sortKey, sortOrder]);
 
   const handleAddItem = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

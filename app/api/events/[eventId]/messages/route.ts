@@ -4,14 +4,14 @@ import { apiResponse } from "@/lib/api-response";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   try {
     const search = req.nextUrl.searchParams.get("search");
     const page = req.nextUrl.searchParams.get("page");
     const limit = req.nextUrl.searchParams.get("limit");
     const messages = await getMessages(
-      params.eventId,
+      (await params).eventId,
       search || undefined,
       page ? Number(page) : 1,
       limit ? Number(limit) : 10
@@ -34,11 +34,12 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   try {
     const body = await req.json();
-    const message = await createMessage(params.eventId, body);
+    const { eventId } = await params;
+    const message = await createMessage(eventId, body);
     return apiResponse(
       "success",
       "Message created successfully",

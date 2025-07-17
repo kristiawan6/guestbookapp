@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import { logout } from "@/app/auth/logout/actions";
 
 export default function DashboardLayout({
   children,
@@ -123,7 +124,11 @@ export default function DashboardLayout({
               <DropdownMenuItem>Settings</DropdownMenuItem>
               <DropdownMenuItem>Support</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Logout</DropdownMenuItem>
+              <form action={logout}>
+                <button type="submit" className="w-full text-left">
+                  <DropdownMenuItem>Logout</DropdownMenuItem>
+                </button>
+              </form>
             </DropdownMenuContent>
           </DropdownMenu>
         </header>

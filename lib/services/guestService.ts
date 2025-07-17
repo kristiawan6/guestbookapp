@@ -2,7 +2,18 @@ import prisma from "@/lib/prisma";
 import { generateQrCode } from "./qrService";
 import * as XLSX from "xlsx";
 
-export const createGuest = async (eventId: string, data: any) => {
+interface GuestData {
+  name: string;
+  email?: string;
+  phoneNumber?: string;
+  address?: string;
+  numberOfGuests?: number;
+  session?: string;
+  tableNumber?: string;
+  guestCategoryId?: string;
+}
+
+export const createGuest = async (eventId: string, data: GuestData) => {
   const {
     name,
     email,
@@ -55,7 +66,14 @@ export const getGuests = async (
   page: number = 1,
   limit: number = 10
 ) => {
-  const where: any = { eventId };
+  const where: {
+    eventId: string;
+    OR?: (
+      | { name: { contains: string; mode: "insensitive" } }
+      | { email: { contains: string; mode: "insensitive" } }
+      | { phoneNumber: { contains: string; mode: "insensitive" } }
+    )[];
+  } = { eventId };
   if (search) {
     where.OR = [
       { name: { contains: search, mode: "insensitive" } },
@@ -64,13 +82,14 @@ export const getGuests = async (
     ];
   }
 
-  const guests = await prisma.guest.findMany({
-    where,
-    skip: (page - 1) * limit,
-    take: limit,
-  });
-
-  const total = await prisma.guest.count({ where });
+  const [guests, total] = await prisma.$transaction([
+    prisma.guest.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.guest.count({ where }),
+  ]);
 
   return {
     data: guests,
@@ -83,7 +102,7 @@ export const getGuests = async (
   };
 };
 
-export const updateGuest = async (id: string, data: any) => {
+export const updateGuest = async (id: string, data: Partial<GuestData>) => {
   const {
     name,
     email,
@@ -122,50 +141,44 @@ export const importGuests = async (eventId: string, file: Buffer) => {
   const workbook = XLSX.read(file, { type: "buffer" });
   const sheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[sheetName];
-  const data: any[] = XLSX.utils.sheet_to_json(worksheet);
+  const data: GuestData[] = XLSX.utils.sheet_to_json(worksheet);
+
+  const existingGuests = await prisma.guest.findMany({
+    where: {
+      eventId,
+      name: { in: data.map((row) => row.name) },
+    },
+    select: {
+      name: true,
+    },
+  });
+  const existingGuestNames = new Set(existingGuests.map((guest) => guest.name));
 
   for (const row of data) {
-    const existingGuest = await prisma.guest.findFirst({
-      where: {
-        name: row.Fullname,
-        eventId,
-      },
-    });
-
-    if (existingGuest) {
-      throw new Error(`Guest "${row.Fullname}" already exists.`);
+    if (existingGuestNames.has(row.name)) {
+      throw new Error(`Guest "${row.name}" already exists.`);
     }
   }
 
   const guestsToCreate = await Promise.all(
-    data.map(async (row: any) => {
+    data.map(async (row) => {
       let guestCategoryId;
-      if (row.Category) {
+      if (row.guestCategoryId) {
         const category = await prisma.guestCategory.findFirst({
           where: {
-            name: row.Category,
+            id: row.guestCategoryId,
             eventId,
           },
         });
         if (category) {
           guestCategoryId = category.id;
-        } else {
-          // Optionally create the category if it doesn't exist
-          const newCategory = await prisma.guestCategory.create({
-            data: {
-              name: row.Category,
-              eventId,
-              code: Math.random().toString(36).substring(2, 8).toUpperCase(),
-            },
-          });
-          guestCategoryId = newCategory.id;
         }
       }
 
       return {
-        name: row.Fullname,
+        name: row.name,
         email: row.email,
-        phoneNumber: String(row.Telephone),
+        phoneNumber: String(row.phoneNumber),
         address: row.address,
         eventId,
         guestCategoryId,

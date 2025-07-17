@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createEvent, getEvents } from "@/lib/services/eventService";
 import { jwtVerify } from "jose";
 import { apiResponse } from "@/lib/api-response";
+import { eventSchema } from "@/lib/validations";
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET || "your-secret-key"
-);
+const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
@@ -57,7 +56,11 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const event = await createEvent(body);
+    const validation = eventSchema.safeParse(body);
+    if (!validation.success) {
+      return apiResponse("error", "Invalid input", null, validation.error.errors, null, 400);
+    }
+    const event = await createEvent(validation.data);
     return apiResponse(
       "success",
       "Event created successfully",

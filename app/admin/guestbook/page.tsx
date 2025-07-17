@@ -33,6 +33,13 @@ type Message = {
   };
 };
 
+type Meta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
 export default function GuestbookPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -40,7 +47,7 @@ export default function GuestbookPage() {
   const { selectedEventId } = useStatistics();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [meta, setMeta] = useState<any>(null);
+  const [meta, setMeta] = useState<Meta | null>(null);
   const [sortKey, setSortKey] = useState<keyof Message>("timestamp");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
@@ -56,8 +63,10 @@ export default function GuestbookPage() {
   };
 
   useEffect(() => {
-    fetchMessages();
-  }, [selectedEventId, search, page, sortKey, sortOrder]);
+    if (selectedEventId) {
+      fetchMessages();
+    }
+  }, [selectedEventId, search, page, fetchMessages]);
 
   const handleUpdateMessage = async (
     event: React.FormEvent<HTMLFormElement>

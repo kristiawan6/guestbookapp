@@ -2,7 +2,15 @@ import prisma from "@/lib/prisma";
 import { hash } from "bcrypt";
 import { UserRole } from "@/app/generated/prisma";
 
-export const createUser = async (data: any) => {
+
+interface UserData {
+  username: string;
+  password?: string;
+  role: UserRole;
+  eventIds?: string[];
+}
+
+export const createUser = async (data: UserData) => {
   const { username, password, role, eventIds } = data;
 
   if (!username || !password || !role) {
@@ -36,7 +44,7 @@ export const createUser = async (data: any) => {
   });
 
   // Omit password from the returned object
-  const { password: _, ...userWithoutPassword } = user;
+  const { ...userWithoutPassword } = user;
   return userWithoutPassword;
 };
 
@@ -59,7 +67,7 @@ export const getUsers = async () => {
   return users;
 };
 
-export const updateUser = async (id: string, data: any) => {
+export const updateUser = async (id: string, data: Partial<UserData>) => {
   const { username, role, eventIds } = data;
 
   const updatedUser = await prisma.user.update({
@@ -87,7 +95,7 @@ export const updateUser = async (id: string, data: any) => {
     },
   });
 
-  const { password, ...userWithoutPassword } = updatedUser;
+  const { ...userWithoutPassword } = updatedUser;
   return userWithoutPassword;
 };
 

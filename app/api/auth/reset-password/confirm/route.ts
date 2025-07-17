@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 import { jwtVerify } from "jose";
 import { hash } from "bcrypt";
+import { apiResponse } from "@/lib/api-response";
+import { resetPasswordSchema } from "@/lib/validations";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
 export async function POST(req: NextRequest) {
-  const { token, newPassword } = await req.json();
-
-  if (!token || !newPassword) {
-    return NextResponse.json(
-      { message: "Token and new password are required" },
-      { status: 400 }
-    );
+  const body = await req.json();
+  const validation = resetPasswordSchema.safeParse(body);
+  if (!validation.success) {
+    return apiResponse("error", "Invalid input", null, validation.error.errors, null, 400);
   }
+  const { token, newPassword } = validation.data;
 
   try {
     const { payload } = await jwtVerify(token, secret);
@@ -30,11 +30,8 @@ export async function POST(req: NextRequest) {
       data: { password: hashedPassword },
     });
 
-    return NextResponse.json(
-      { message: "Password has been reset successfully" },
-      { status: 200 }
-    );
-  } catch (err) {
-    return NextResponse.json({ message: "Invalid or expired token" }, { status: 400 });
+    return apiResponse("success", "Password has been reset successfully", null, null, null, 200);
+  } catch {
+    return apiResponse("error", "Invalid or expired token", null, null, null, 400);
   }
 }
