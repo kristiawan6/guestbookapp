@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Guestbook App
+
+![Guestbook App](public/logo.svg)
+
+A modern, full-stack guestbook application built with Next.js, Prisma, and Tailwind CSS. This application allows event organizers to manage guests, send broadcast messages, and track attendance.
+
+## Features
+
+- **Event Management:** Create and manage multiple events.
+- **Guest Management:** Add, edit, and delete guests. Import and export guest lists from CSV files.
+- **Guest Categories:** Categorize guests for better organization.
+- **Broadcast Messaging:** Send broadcast messages to guests via WhatsApp and Email.
+- **QR Code Generation:** Generate unique QR codes for each guest for easy check-in.
+- **Souvenir Claiming:** Track souvenir claims for each event.
+- **Real-time Statistics:** View real-time statistics for each event.
+- **Authentication:** Secure authentication for event organizers and administrators.
+
+## Tech Stack
+
+- **Framework:** [Next.js](https://nextjs.org/)
+- **ORM:** [Prisma](https://www.prisma.io/)
+- **Database:** [PostgreSQL](https://www.postgresql.org/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+- **UI Components:** [Shadcn/UI](https://ui.shadcn.com/)
+- **Authentication:** [NextAuth.js](https://next-auth.js.org/)
+- **Deployment:** [Vercel](https://vercel.com/)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- [Node.js](https://nodejs.org/en/) (v18.x or later)
+- [Yarn](https://yarnpkg.com/) or [npm](https://www.npmjs.com/)
+- [PostgreSQL](https://www.postgresql.org/)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Installation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Clone the repository:**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+   ```bash
+   git clone https://github.com/kristiawan6/guestbookapp.git
+   cd guestbookapp
+   ```
 
-## Learn More
+2. **Install dependencies:**
 
-To learn more about Next.js, take a look at the following resources:
+   ```bash
+   yarn install
+   # or
+   npm install
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. **Set up the database:**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   - Create a `.env` file in the root of the project.
+   - Add your database connection string to the `.env` file:
 
-## Deploy on Vercel
+     ```
+     DATABASE_URL="postgresql://user:password@host:port/database"
+     ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   - Run the following command to migrate the database schema:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+     ```bash
+     npx prisma migrate dev
+     ```
+
+4. **Run the development server:**
+
+   ```bash
+   yarn dev
+   # or
+   npm run dev
+   ```
+
+   Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a pull request or open an issue.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
