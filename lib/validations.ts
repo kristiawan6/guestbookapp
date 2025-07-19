@@ -31,8 +31,14 @@ export const claimableItemSchema = z.object({
 
 export const userSchema = z.object({
   username: z.string().min(1, "Username is required"),
-  password: z.string().min(6, "Password must be at least 6 characters long"),
+  email: z.string().email("Invalid email address"),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters long")
+    .optional(),
   role: z.enum(["SuperAdmin", "AdminEvents"]),
+  isActive: z.boolean().optional(),
+  eventId: z.string().optional(),
 });
 
 export const resetPasswordSchema = z.object({

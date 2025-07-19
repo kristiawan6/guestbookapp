@@ -61,7 +61,7 @@ export default function ClaimSouvenirPage() {
   const fetchItems = useCallback(() => {
     if (selectedEventId) {
       fetch(
-        `/api/events/${selectedEventId}/claimable-items?search=${search}&page=${page}`
+        `/api/events/${selectedEventId}/claimable-items?search=${search}&page=${page}&sortKey=${sortKey}&sortOrder=${sortOrder}`
       )
         .then((res) => res.json())
         .then((data) => {
@@ -69,13 +69,13 @@ export default function ClaimSouvenirPage() {
           setMeta(data.meta);
         });
     }
-  }, [selectedEventId, search, page]);
+  }, [selectedEventId, search, page, sortKey, sortOrder]);
 
   useEffect(() => {
     if (selectedEventId) {
       fetchItems();
     }
-  }, [fetchItems, selectedEventId, sortKey, sortOrder]);
+  }, [fetchItems, selectedEventId]);
 
   const handleAddItem = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -141,15 +141,6 @@ export default function ClaimSouvenirPage() {
     document.body.removeChild(link);
   };
 
-  const sortedItems = [...items].sort((a, b) => {
-    if (a[sortKey] < b[sortKey]) {
-      return sortOrder === "asc" ? -1 : 1;
-    }
-    if (a[sortKey] > b[sortKey]) {
-      return sortOrder === "asc" ? 1 : -1;
-    }
-    return 0;
-  });
 
   const handleSort = (key: keyof ClaimableItem) => {
     if (sortKey === key) {
@@ -271,7 +262,7 @@ export default function ClaimSouvenirPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedItems.map((item, index) => (
+            {items.map((item, index) => (
               <TableRow key={item.id}>
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{item.name}</TableCell>

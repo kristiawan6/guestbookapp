@@ -27,7 +27,9 @@ export const createEvent = async (data: EventData) => {
 export const getEvents = async (
   search?: string,
   page: number = 1,
-  limit: number = 10
+  limit: number = 10,
+  sortKey: string = "name",
+  sortOrder: string = "asc"
 ) => {
   const where: {
     OR?: (
@@ -45,6 +47,9 @@ export const getEvents = async (
   const [events, total] = await prisma.$transaction([
     prisma.event.findMany({
       where,
+      orderBy: {
+        [sortKey]: sortOrder,
+      },
       skip: (page - 1) * limit,
       take: limit,
     }),

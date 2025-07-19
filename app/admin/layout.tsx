@@ -181,16 +181,28 @@ export default function AdminLayout({
               </SidebarMenuItem>
             ))}
             {user?.role === "SuperAdmin" && (
-              <SidebarMenuItem>
-                <Link href="/admin/event-management">
-                  <SidebarMenuButton
-                    isActive={pathname === "/admin/event-management"}
-                  >
-                    <Shield className="h-5 w-5" />
-                    Event Management
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
+              <>
+                <SidebarMenuItem>
+                  <Link href="/admin/event-management">
+                    <SidebarMenuButton
+                      isActive={pathname === "/admin/event-management"}
+                    >
+                      <Shield className="h-5 w-5" />
+                      Event Management
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <Link href="/admin/user-management">
+                    <SidebarMenuButton
+                      isActive={pathname === "/admin/user-management"}
+                    >
+                      <Users className="h-5 w-5" />
+                      User Management
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+              </>
             )}
           </SidebarMenu>
         </SidebarContent>

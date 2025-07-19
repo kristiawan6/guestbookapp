@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowUpDown, Pencil, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -51,22 +51,24 @@ export default function GuestbookPage() {
   const [sortKey, setSortKey] = useState<keyof Message>("timestamp");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const fetchMessages = () => {
+  const fetchMessages = useCallback(() => {
     if (selectedEventId) {
-      fetch(`/api/events/${selectedEventId}/messages?search=${search}&page=${page}`)
+      fetch(
+        `/api/events/${selectedEventId}/messages?search=${search}&page=${page}&sortKey=${sortKey}&sortOrder=${sortOrder}`
+      )
         .then((res) => res.json())
         .then((data) => {
           setMessages(data.data);
           setMeta(data.meta);
         });
     }
-  };
+  }, [page, search, selectedEventId, sortKey, sortOrder]);
 
   useEffect(() => {
     if (selectedEventId) {
       fetchMessages();
     }
-  }, [selectedEventId, search, page, fetchMessages]);
+  }, [fetchMessages, selectedEventId]);
 
   const handleUpdateMessage = async (
     event: React.FormEvent<HTMLFormElement>
@@ -121,15 +123,6 @@ export default function GuestbookPage() {
     });
   };
 
-  const sortedMessages = [...messages].sort((a, b) => {
-    if (a[sortKey] < b[sortKey]) {
-      return sortOrder === "asc" ? -1 : 1;
-    }
-    if (a[sortKey] > b[sortKey]) {
-      return sortOrder === "asc" ? 1 : -1;
-    }
-    return 0;
-  });
 
   const handleSort = (key: keyof Message) => {
     if (sortKey === key) {
@@ -186,7 +179,7 @@ export default function GuestbookPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedMessages.map((message, index) => (
+            {messages.map((message, index) => (
               <TableRow key={message.id}>
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{message.guest.name}</TableCell>

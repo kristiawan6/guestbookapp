@@ -2,11 +2,9 @@
 
 import {
   ArrowUpDown,
-  Copy,
   Pencil,
   Plus,
   Trash2,
-  Upload,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -28,18 +26,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useStatistics } from "@/hooks/use-statistics";
-import Papa from "papaparse";
 import Swal from "sweetalert2";
+import { useStatistics } from "@/hooks/use-statistics";
 
-type GuestCategory = {
+type User = {
   id: string;
-  code: string;
-  name: string;
-  description: string;
-  quota: number;
+  username: string;
+  email: string;
+  role: string;
   isActive: boolean;
   eventId: string;
+};
+
+type Event = {
+  id: string;
+  name: string;
 };
 
 type Meta = {
@@ -49,51 +50,52 @@ type Meta = {
   totalPages: number;
 };
 
-export default function GuestCategoryPage() {
-  const [guestCategories, setGuestCategories] = useState<GuestCategory[]>([]);
+export default function UserManagementPage() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] =
-    useState<GuestCategory | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const { selectedEventId, isLoading } = useStatistics();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState<Meta | null>(null);
-  const [sortKey, setSortKey] = useState<keyof GuestCategory>("name");
+  const [sortKey, setSortKey] = useState<keyof User>("username");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const fetchGuestCategories = useCallback(() => {
-    if (selectedEventId) {
-      fetch(
-        `/api/events/${selectedEventId}/guest-categories?search=${search}&page=${page}&sortKey=${sortKey}&sortOrder=${sortOrder}`
-      )
-        .then((res) => res.json())
-        .then((data) => {
-          setGuestCategories(data.data);
-          setMeta(data.meta);
-        });
-    }
-  }, [page, search, selectedEventId, sortKey, sortOrder]);
+  const fetchUsers = useCallback(() => {
+    fetch(
+      `/api/users?search=${search}&page=${page}&sortKey=${sortKey}&sortOrder=${sortOrder}`
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        setUsers(data.data);
+        setMeta(data.meta);
+      });
+  }, [page, search, sortKey, sortOrder]);
+
+  const fetchEvents = useCallback(() => {
+    fetch("/api/events")
+      .then((res) => res.json())
+      .then((data) => {
+        setEvents(data.data);
+      });
+  }, []);
 
   useEffect(() => {
-    if (selectedEventId) {
-      fetchGuestCategories();
-    }
-  }, [fetchGuestCategories, selectedEventId]);
+    fetchUsers();
+    fetchEvents();
+  }, [fetchUsers, fetchEvents]);
 
-  const handleAddCategory = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleAddUser = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!selectedEventId) {
-      console.error("Event ID is not available.");
-      return;
-    }
     const formData = new FormData(event.currentTarget);
     const data = Object.fromEntries(formData.entries());
 
-    const url = selectedCategory
-      ? `/api/events/${selectedEventId}/guest-categories/${selectedCategory.id}`
-      : `/api/events/${selectedEventId}/guest-categories`;
+    const url = selectedUser
+      ? `/api/users/${selectedUser.id}`
+      : "/api/users";
 
-    const method = selectedCategory ? "PUT" : "POST";
+    const method = selectedUser ? "PUT" : "POST";
 
     try {
       const response = await fetch(url, {
@@ -103,7 +105,6 @@ export default function GuestCategoryPage() {
         },
         body: JSON.stringify({
           ...data,
-          quota: parseInt(data.quota as string) || 0,
           isActive: data.isActive === "on",
         }),
       });
@@ -113,13 +114,13 @@ export default function GuestCategoryPage() {
         throw new Error(errorData.message || "Something went wrong");
       }
 
-      fetchGuestCategories();
+      fetchUsers();
       setIsDialogOpen(false);
-      setSelectedCategory(null);
+      setSelectedUser(null);
       Swal.fire({
         icon: "success",
-        title: `Category ${
-          selectedCategory ? "updated" : "created"
+        title: `User ${
+          selectedUser ? "updated" : "created"
         } successfully`,
         showConfirmButton: false,
         timer: 1500,
@@ -133,12 +134,12 @@ export default function GuestCategoryPage() {
     }
   };
 
-  const handleEdit = (category: GuestCategory) => {
-    setSelectedCategory(category);
+  const handleEdit = (user: User) => {
+    setSelectedUser(user);
     setIsDialogOpen(true);
   };
 
-  const handleDelete = async (categoryId: string) => {
+  const handleDelete = async (userId: string) => {
     Swal.fire({
       title: "Are you sure?",
       text: "You won't be able to revert this!",
@@ -149,21 +150,18 @@ export default function GuestCategoryPage() {
       confirmButtonText: "Yes, delete it!",
     }).then(async (result) => {
       if (result.isConfirmed) {
-        const response = await fetch(
-          `/api/events/${selectedEventId}/guest-categories/${categoryId}`,
-          {
-            method: "DELETE",
-          }
-        );
+        const response = await fetch(`/api/users/${userId}`, {
+          method: "DELETE",
+        });
 
         if (response.ok) {
-          fetchGuestCategories();
-          Swal.fire("Deleted!", "The category has been deleted.", "success");
+          fetchUsers();
+          Swal.fire("Deleted!", "The user has been deleted.", "success");
         } else {
           const errorData = await response.json();
           Swal.fire(
             "Failed!",
-            errorData.message || "Failed to delete the category.",
+            errorData.message || "Failed to delete the user.",
             "error"
           );
         }
@@ -171,21 +169,7 @@ export default function GuestCategoryPage() {
     });
   };
 
-  const handleExport = () => {
-    const csv = Papa.unparse(guestCategories);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", "guest-categories.csv");
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-
-  const handleSort = (key: keyof GuestCategory) => {
+  const handleSort = (key: keyof User) => {
     if (sortKey === key) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
     } else {
@@ -195,9 +179,9 @@ export default function GuestCategoryPage() {
   };
 
   return (
-    <div>
+    <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Guest Category</h1>
+        <h1 className="text-2xl font-bold">User Management</h1>
         <div className="flex items-center gap-2">
           <Input
             placeholder="Search..."
@@ -207,65 +191,92 @@ export default function GuestCategoryPage() {
           />
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="mr-2" disabled={isLoading}>
-                <Plus className="mr-2 h-4 w-4" /> Add
+              <Button
+                className="mr-2"
+                onClick={() => {
+                  setSelectedUser(null);
+                  setIsDialogOpen(true);
+                }}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add User
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>
-                  {selectedCategory ? "Edit" : "Add"} Guest Category
+                  {selectedUser ? "Edit" : "Add"} User
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleAddCategory}>
+              <form
+                key={selectedUser ? "edit-user-form" : "add-user-form"}
+                onSubmit={handleAddUser}
+              >
                 <div className="grid gap-4 py-4">
-                  {selectedCategory && (
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="username" className="text-right">
+                      Username
+                    </Label>
+                    <Input
+                      id="username"
+                      name="username"
+                      defaultValue={selectedUser?.username}
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="email" className="text-right">
+                      Email
+                    </Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      defaultValue={selectedUser?.email}
+                      className="col-span-3"
+                    />
+                  </div>
+                  {!selectedUser && (
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="code" className="text-right">
-                        Code
+                      <Label htmlFor="password" className="text-right">
+                        Password
                       </Label>
                       <Input
-                        id="code"
-                        name="code"
-                        defaultValue={selectedCategory?.code}
+                        id="password"
+                        name="password"
+                        type="password"
                         className="col-span-3"
-                        readOnly
                       />
                     </div>
                   )}
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">
-                      Name
+                    <Label htmlFor="role" className="text-right">
+                      Role
                     </Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      defaultValue={selectedCategory?.name}
-                      className="col-span-3"
-                    />
+                    <select
+                      id="role"
+                      name="role"
+                      defaultValue={selectedUser?.role}
+                      className="col-span-3 border rounded-md"
+                    >
+                      <option value="Admin">Admin</option>
+                      <option value="SuperAdmin">SuperAdmin</option>
+                    </select>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="description" className="text-right">
-                      Description
+                    <Label htmlFor="eventId" className="text-right">
+                      Event
                     </Label>
-                    <Input
-                      id="description"
-                      name="description"
-                      defaultValue={selectedCategory?.description}
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="quota" className="text-right">
-                      Quota
-                    </Label>
-                    <Input
-                      id="quota"
-                      name="quota"
-                      type="number"
-                      defaultValue={selectedCategory?.quota}
-                      className="col-span-3"
-                    />
+                    <select
+                      id="eventId"
+                      name="eventId"
+                      defaultValue={selectedUser?.eventId}
+                      className="col-span-3 border rounded-md"
+                    >
+                      {events.map((event) => (
+                        <option key={event.id} value={event.id}>
+                          {event.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="isActive" className="text-right">
@@ -274,7 +285,7 @@ export default function GuestCategoryPage() {
                     <Checkbox
                       id="isActive"
                       name="isActive"
-                      defaultChecked={selectedCategory?.isActive}
+                      defaultChecked={selectedUser?.isActive}
                     />
                   </div>
                 </div>
@@ -282,46 +293,34 @@ export default function GuestCategoryPage() {
               </form>
             </DialogContent>
           </Dialog>
-          <Button variant="outline" onClick={handleExport}>
-            <Upload className="mr-2 h-4 w-4" /> Export
-          </Button>
         </div>
       </div>
-      <div className="bg-white p-4 rounded-lg shadow overflow-x-auto">
+      <div className="bg-white p-4 rounded-lg shadow">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>No.</TableHead>
               <TableHead>
-                <Button variant="ghost" onClick={() => handleSort("code")}>
-                  Code
+                <Button variant="ghost" onClick={() => handleSort("username")}>
+                  Username
                   <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
               </TableHead>
               <TableHead>
-                <Button variant="ghost" onClick={() => handleSort("name")}>
-                  Category Name
+                <Button variant="ghost" onClick={() => handleSort("email")}>
+                  Email
                   <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
               </TableHead>
               <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort("description")}
-                >
-                  Description
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button variant="ghost" onClick={() => handleSort("quota")}>
-                  Quota
+                <Button variant="ghost" onClick={() => handleSort("role")}>
+                  Role
                   <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
               </TableHead>
               <TableHead>
                 <Button variant="ghost" onClick={() => handleSort("isActive")}>
-                  Active
+                  Is Active
                   <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
               </TableHead>
@@ -329,27 +328,26 @@ export default function GuestCategoryPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {guestCategories.map((category, index) => (
-              <TableRow key={category.id}>
+            {users.map((user, index) => (
+              <TableRow key={user.id}>
                 <TableCell>{index + 1}</TableCell>
-                <TableCell>{category.code}</TableCell>
-                <TableCell>{category.name}</TableCell>
-                <TableCell>{category.description}</TableCell>
-                <TableCell>{category.quota}</TableCell>
-                <TableCell>{category.isActive ? "Y" : "N"}</TableCell>
+                <TableCell>{user.username}</TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>{user.role}</TableCell>
+                <TableCell>{user.isActive ? "Y" : "N"}</TableCell>
                 <TableCell>
                   <Button
                     variant="outline"
                     size="sm"
                     className="mr-2"
-                    onClick={() => handleEdit(category)}
+                    onClick={() => handleEdit(user)}
                   >
                     <Pencil className="mr-2 h-4 w-4" /> Edit
                   </Button>
                   <Button
                     variant="destructive"
                     size="sm"
-                    onClick={() => handleDelete(category.id)}
+                    onClick={() => handleDelete(user.id)}
                   >
                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                   </Button>

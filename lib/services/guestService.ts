@@ -64,7 +64,9 @@ export const getGuests = async (
   eventId: string,
   search?: string,
   page: number = 1,
-  limit: number = 10
+  limit: number = 10,
+  sortKey: string = "name",
+  sortOrder: string = "asc"
 ) => {
   const where: {
     eventId: string;
@@ -85,6 +87,9 @@ export const getGuests = async (
   const [guests, total] = await prisma.$transaction([
     prisma.guest.findMany({
       where,
+      orderBy: {
+        [sortKey]: sortOrder,
+      },
       skip: (page - 1) * limit,
       take: limit,
     }),

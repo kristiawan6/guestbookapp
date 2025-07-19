@@ -16,7 +16,7 @@ import {
   Upload,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { ImportDialog } from "@/components/ui/import-dialog";
 import {
@@ -102,16 +102,18 @@ export default function GuestPage() {
   const [sortKey, setSortKey] = useState<keyof Guest>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const fetchGuests = () => {
+  const fetchGuests = useCallback(() => {
     if (selectedEventId) {
-      fetch(`/api/events/${selectedEventId}/guests?search=${search}&page=${page}`)
+      fetch(
+        `/api/events/${selectedEventId}/guests?search=${search}&page=${page}&sortKey=${sortKey}&sortOrder=${sortOrder}`
+      )
         .then((res) => res.json())
         .then((data) => {
           setGuests(data.data);
           setMeta(data.meta);
         });
     }
-  };
+  }, [page, search, selectedEventId, sortKey, sortOrder]);
 
   useEffect(() => {
     if (selectedEventId) {
@@ -119,8 +121,11 @@ export default function GuestPage() {
         .then((res) => res.json())
         .then((data) => setGuestCategories(data.data));
     }
+  }, [selectedEventId]);
+
+  useEffect(() => {
     fetchGuests();
-  }, [selectedEventId, search, page, sortKey, sortOrder]);
+  }, [fetchGuests]);
 
   const handleAddGuest = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -241,15 +246,6 @@ export default function GuestPage() {
     XLSX.writeFile(workbook, "Template_Excel.xlsx");
   };
 
-  const sortedGuests = [...guests].sort((a, b) => {
-    if (a[sortKey] < b[sortKey]) {
-      return sortOrder === "asc" ? -1 : 1;
-    }
-    if (a[sortKey] > b[sortKey]) {
-      return sortOrder === "asc" ? 1 : -1;
-    }
-    return 0;
-  });
 
   const handleSort = (key: keyof Guest) => {
     if (sortKey === key) {
@@ -576,7 +572,7 @@ export default function GuestPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedGuests.map((guest, index) => (
+              {guests.map((guest, index) => (
                 <TableRow key={guest.id}>
                   <TableCell className="p-4 text-center">
                     <Checkbox

@@ -5,15 +5,17 @@ import { UserRole } from "@/app/generated/prisma";
 
 interface UserData {
   username: string;
+  email: string;
   password?: string;
   role: UserRole;
-  eventIds?: string[];
+  isActive?: boolean;
+  eventId?: string;
 }
 
 export const createUser = async (data: UserData) => {
-  const { username, password, role, eventIds } = data;
+  const { username, email, password, role, isActive, eventId } = data;
 
-  if (!username || !password || !role) {
+  if (!username || !email || !password || !role) {
     throw new Error("Missing required fields");
   }
 
@@ -22,80 +24,92 @@ export const createUser = async (data: UserData) => {
   const user = await prisma.user.create({
     data: {
       username,
+      email,
       password: hashedPassword,
       role: role as UserRole,
+      isActive,
       events: {
-        create: eventIds?.map((eventId: string) => ({
-          event: {
-            connect: {
-              id: eventId,
-            },
-          },
-        })),
-      },
-    },
-    include: {
-      events: {
-        select: {
-          eventId: true,
-        },
+        create: eventId ? [{ event: { connect: { id: eventId } } }] : [],
       },
     },
   });
 
-  // Omit password from the returned object
-  const { ...userWithoutPassword } = user;
+  const { password: _, ...userWithoutPassword } = user;
   return userWithoutPassword;
 };
 
-export const getUsers = async () => {
-  const users = await prisma.user.findMany({
-    where: {
-      role: "AdminEvents",
-    },
-    select: {
-      id: true,
-      username: true,
-      role: true,
-      events: {
-        select: {
-          eventId: true,
+export const getUsers = async (
+  search?: string,
+  page: number = 1,
+  limit: number = 10,
+  sortKey: string = "username",
+  sortOrder: string = "asc"
+) => {
+  const where: any = {};
+  if (search) {
+    where.OR = [
+      { username: { contains: search, mode: "insensitive" } },
+      { email: { contains: search, mode: "insensitive" } },
+      { role: { equals: search as any } },
+    ];
+  }
+
+  const [users, total] = await prisma.$transaction([
+    prisma.user.findMany({
+      where,
+      orderBy: {
+        [sortKey]: sortOrder,
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        isActive: true,
+        events: {
+          select: {
+            eventId: true,
+          },
         },
       },
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return {
+    data: users.map((u) => ({
+      ...u,
+      eventId: u.events.length > 0 ? u.events[0].eventId : "",
+    })),
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
     },
-  });
-  return users;
+  };
 };
 
 export const updateUser = async (id: string, data: Partial<UserData>) => {
-  const { username, role, eventIds } = data;
+  const { username, email, role, isActive, eventId } = data;
 
   const updatedUser = await prisma.user.update({
     where: { id },
     data: {
       username,
+      email,
       role: role as UserRole,
+      isActive,
       events: {
         deleteMany: {},
-        create: eventIds?.map((eventId: string) => ({
-          event: {
-            connect: {
-              id: eventId,
-            },
-          },
-        })),
-      },
-    },
-    include: {
-      events: {
-        select: {
-          eventId: true,
-        },
+        create: eventId ? [{ event: { connect: { id: eventId } } }] : [],
       },
     },
   });
 
-  const { ...userWithoutPassword } = updatedUser;
+  const { password: _, ...userWithoutPassword } = updatedUser;
   return userWithoutPassword;
 };
 

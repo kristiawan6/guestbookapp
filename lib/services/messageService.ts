@@ -42,7 +42,9 @@ export const getMessages = async (
   eventId: string,
   search?: string,
   page: number = 1,
-  limit: number = 10
+  limit: number = 10,
+  sortKey: string = "timestamp",
+  sortOrder: string = "desc"
 ) => {
   const where: {
     eventId: string;
@@ -58,19 +60,20 @@ export const getMessages = async (
     ];
   }
 
-  const messages = await prisma.message.findMany({
-    where,
-    include: {
-      guest: true,
-    },
-    skip: (page - 1) * limit,
-    take: limit,
-    orderBy: {
-      timestamp: "desc",
-    },
-  });
-
-  const total = await prisma.message.count({ where });
+  const [messages, total] = await prisma.$transaction([
+    prisma.message.findMany({
+      where,
+      include: {
+        guest: true,
+      },
+      orderBy: {
+        [sortKey]: sortOrder,
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.message.count({ where }),
+  ]);
 
   return {
     data: messages,

@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import { securityMiddleware } from "./lib/middleware";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
 export async function middleware(req: NextRequest) {
+  const res = NextResponse.next();
+  await securityMiddleware(req, res);
+
   const token = req.cookies.get("token")?.value;
 
   if (!token) {
@@ -22,7 +26,7 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
-    return NextResponse.next();
+    return res;
   } catch (err) {
     return NextResponse.redirect(new URL("/auth/login", req.url));
   }

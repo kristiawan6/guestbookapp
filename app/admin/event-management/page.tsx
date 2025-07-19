@@ -1,7 +1,13 @@
 "use client";
 
-import { ArrowUpDown, Pencil, Plus, Trash2, Upload } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  ArrowUpDown,
+  Pencil,
+  Plus,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -48,18 +54,20 @@ export default function EventManagementPage() {
   const [sortKey, setSortKey] = useState<keyof Event>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const fetchEvents = () => {
-    fetch(`/api/events?search=${search}&page=${page}`)
+  const fetchEvents = useCallback(() => {
+    fetch(
+      `/api/events?search=${search}&page=${page}&sortKey=${sortKey}&sortOrder=${sortOrder}`
+    )
       .then((res) => res.json())
       .then((data) => {
         setEvents(data.data);
         setMeta(data.meta);
       });
-  };
+  }, [page, search, sortKey, sortOrder]);
 
   useEffect(() => {
     fetchEvents();
-  }, [search, page, fetchEvents]);
+  }, [fetchEvents]);
 
   const handleAddEvent = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -120,16 +128,14 @@ export default function EventManagementPage() {
     document.body.removeChild(link);
   };
 
-  const sortedEvents = [...events].sort((a, b) => {
-    if (a[sortKey] < b[sortKey]) {
-      return sortOrder === "asc" ? -1 : 1;
+  const handleSort = (key: keyof Event) => {
+    if (sortKey === key) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortOrder("asc");
     }
-    if (a[sortKey] > b[sortKey]) {
-      return sortOrder === "asc" ? 1 : -1;
-    }
-    return 0;
-  });
-
+  };
 
   return (
     <div className="p-6">
@@ -203,14 +209,32 @@ export default function EventManagementPage() {
           <TableHeader>
             <TableRow>
               <TableHead>No.</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Is Active</TableHead>
+              <TableHead>
+                <Button variant="ghost" onClick={() => handleSort("name")}>
+                  Name
+                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSort("description")}
+                >
+                  Description
+                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button variant="ghost" onClick={() => handleSort("isActive")}>
+                  Is Active
+                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              </TableHead>
               <TableHead className="text-center">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedEvents.map((event, index) => (
+            {events.map((event, index) => (
               <TableRow key={event.id}>
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{event.name}</TableCell>

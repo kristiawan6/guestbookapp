@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { updateUser, deleteUser } from "@/lib/services/userService";
 import { jwtVerify } from "jose";
 import { apiResponse } from "@/lib/api-response";
@@ -13,28 +13,30 @@ export async function PUT(
   const token = req.cookies.get("token")?.value;
 
   if (!token) {
-    return apiResponse("error", "Unauthorized", null, null, null, 401);
+    return apiResponse("error", "Unauthorized", null, [], null, 401);
   }
 
   try {
-    const { payload } = await jwtVerify(token, secret);
-
-    if (payload.role !== "SuperAdmin") {
-      return apiResponse("error", "Forbidden", null, null, null, 403);
-    }
-
+    await jwtVerify(token, secret);
     const body = await req.json();
-    const validation = userSchema.partial().safeParse(body);
+    const validation = userSchema.safeParse(body);
     if (!validation.success) {
       return apiResponse("error", "Invalid input", null, validation.error.errors, null, 400);
     }
     const user = await updateUser(params.id, validation.data);
-    return apiResponse("success", "User updated successfully", user, null, null, 200);
+    return apiResponse(
+      "success",
+      "User updated successfully",
+      user,
+      null,
+      null,
+      200
+    );
   } catch (err) {
     if (err instanceof Error) {
-      return apiResponse("error", err.message, null, null, null, 400);
+      return apiResponse("error", err.message, null, [], null, 400);
     }
-    return apiResponse("error", "Unauthorized", null, null, null, 401);
+    return apiResponse("error", "Unauthorized", null, [], null, 401);
   }
 }
 
@@ -45,19 +47,21 @@ export async function DELETE(
   const token = req.cookies.get("token")?.value;
 
   if (!token) {
-    return apiResponse("error", "Unauthorized", null, null, null, 401);
+    return apiResponse("error", "Unauthorized", null, [], null, 401);
   }
 
   try {
-    const { payload } = await jwtVerify(token, secret);
-
-    if (payload.role !== "SuperAdmin") {
-      return apiResponse("error", "Forbidden", null, null, null, 403);
-    }
-
+    await jwtVerify(token, secret);
     await deleteUser(params.id);
-    return apiResponse("success", "User deleted successfully", null, null, null, 204);
+    return apiResponse(
+      "success",
+      "User deleted successfully",
+      null,
+      null,
+      null,
+      200
+    );
   } catch (err) {
-    return apiResponse("error", "Unauthorized", null, null, null, 401);
+    return apiResponse("error", "Unauthorized", null, [], null, 401);
   }
 }

@@ -1,37 +1,48 @@
 import { NextRequest } from "next/server";
-import prisma from "@/lib/prisma";
-import { jwtVerify } from "jose";
-import { hash } from "bcrypt";
 import { apiResponse } from "@/lib/api-response";
-import { resetPasswordSchema } from "@/lib/validations";
-
-const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
+import prisma from "@/lib/prisma";
+import { hash } from "bcrypt";
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const validation = resetPasswordSchema.safeParse(body);
-  if (!validation.success) {
-    return apiResponse("error", "Invalid input", null, validation.error.errors, null, 400);
-  }
-  const { token, newPassword } = validation.data;
-
   try {
-    const { payload } = await jwtVerify(token, secret);
-    const { userId } = payload;
+    const body = await req.json();
+    const { email, otp, password } = body;
 
-    if (!userId) {
-      throw new Error("Invalid token");
-    }
-
-    const hashedPassword = await hash(newPassword, 12);
-
-    await prisma.user.update({
-      where: { id: userId as string },
-      data: { password: hashedPassword },
+    const user = await prisma.user.findUnique({
+      where: { email },
     });
 
-    return apiResponse("success", "Password has been reset successfully", null, null, null, 200);
-  } catch {
-    return apiResponse("error", "Invalid or expired token", null, null, null, 400);
+    if (!user) {
+      return apiResponse("error", "User not found", null, [], null, 404);
+    }
+
+    if (!user.otpExpires || user.otp !== otp || user.otpExpires < new Date()) {
+      return apiResponse("error", "Invalid or expired OTP", null, [], null, 400);
+    }
+
+    const hashedPassword = await hash(password, 12);
+
+    await prisma.user.update({
+      where: { email },
+      data: {
+        password: hashedPassword,
+        otp: null,
+        otpExpires: null,
+      },
+    });
+
+    return apiResponse(
+      "success",
+      "Password reset successfully",
+      null,
+      null,
+      null,
+      200
+    );
+  } catch (err) {
+    if (err instanceof Error) {
+      return apiResponse("error", err.message, null, [], null, 400);
+    }
+    return apiResponse("error", "Internal Server Error", null, [], null, 500);
   }
 }

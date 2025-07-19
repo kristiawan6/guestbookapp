@@ -24,11 +24,15 @@ export async function GET(
     const search = req.nextUrl.searchParams.get("search");
     const page = req.nextUrl.searchParams.get("page");
     const limit = req.nextUrl.searchParams.get("limit");
+    const sortKey = req.nextUrl.searchParams.get("sortKey");
+    const sortOrder = req.nextUrl.searchParams.get("sortOrder");
     const claimableItems = await getClaimableItems(
       (await params).eventId,
       search || undefined,
       page ? Number(page) : 1,
-      limit ? Number(limit) : 10
+      limit ? Number(limit) : 10,
+      sortKey || undefined,
+      sortOrder || undefined
     );
     return apiResponse(
       "success",

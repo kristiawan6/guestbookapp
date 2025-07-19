@@ -37,7 +37,9 @@ export const getClaimableItems = async (
   eventId: string,
   search?: string,
   page: number = 1,
-  limit: number = 10
+  limit: number = 10,
+  sortKey: string = "name",
+  sortOrder: string = "asc"
 ) => {
   const where: {
     eventId: string;
@@ -53,13 +55,17 @@ export const getClaimableItems = async (
     ];
   }
 
-  const claimableItems = await prisma.claimableItem.findMany({
-    where,
-    skip: (page - 1) * limit,
-    take: limit,
-  });
-
-  const total = await prisma.claimableItem.count({ where });
+  const [claimableItems, total] = await prisma.$transaction([
+    prisma.claimableItem.findMany({
+      where,
+      orderBy: {
+        [sortKey]: sortOrder,
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.claimableItem.count({ where }),
+  ]);
 
   return {
     data: claimableItems,

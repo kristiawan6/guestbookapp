@@ -8,6 +8,7 @@ import { useStatistics } from "@/hooks/use-statistics";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
+import DOMPurify from "isomorphic-dompurify";
 
 type BroadcastTemplate = {
   id: string;
@@ -143,7 +144,14 @@ export default function BroadcastTemplatePage() {
             </div>
             <div className="bg-cover bg-center p-4 rounded-md" style={{ backgroundImage: "url('/wa-bg.png')" }}>
               <div className="bg-white p-3 rounded-lg shadow-sm">
-                <p className="text-xs text-gray-800" dangerouslySetInnerHTML={{ __html: template.content.replace(/\n/g, '<br />') }}></p>
+                <p
+                  className="text-xs text-gray-800"
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(
+                      template.content.replace(/\n/g, "<br />")
+                    ),
+                  }}
+                ></p>
               </div>
             </div>
           </div>
