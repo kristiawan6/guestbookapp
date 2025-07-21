@@ -32,8 +32,9 @@ export async function POST(req: NextRequest) {
     const uploadsDir = join(process.cwd(), "public", "uploads");
     try {
       await stat(uploadsDir);
-    } catch (error: any) {
-      if (error.code === "ENOENT") {
+    } catch (error: unknown) {
+      const e = error as { code?: string };
+      if (e.code === "ENOENT") {
         await mkdir(uploadsDir, { recursive: true });
       } else {
         console.error("Error checking uploads directory:", error);

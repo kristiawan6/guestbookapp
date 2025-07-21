@@ -55,7 +55,7 @@ export default function UserManagementPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const { selectedEventId, isLoading } = useStatistics();
+  const {} = useStatistics();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -125,11 +125,12 @@ export default function UserManagementPage() {
         showConfirmButton: false,
         timer: 1500,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unexpected error occurred";
       Swal.fire({
         icon: "error",
         title: "Operation Failed",
-        text: error.message,
+        text: message,
       });
     }
   };

@@ -12,7 +12,7 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-k
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { eventId: string; templateId: string } }
+  { params }: { params: Promise<{ eventId: string; templateId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -32,11 +32,12 @@ export async function GET(
       null,
       200
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const error = err as { name?: string; code?: string };
     if (
-      err.name === "JWTExpired" ||
-      err.code === "ERR_JWS_SIGNATURE_VERIFICATION_FAILED" ||
-      err.code === "ERR_JWS_INVALID"
+      error.name === "JWTExpired" ||
+      error.code === "ERR_JWS_SIGNATURE_VERIFICATION_FAILED" ||
+      error.code === "ERR_JWS_INVALID"
     ) {
       return apiResponse("error", "Unauthorized", null, [], null, 401);
     }
@@ -81,11 +82,12 @@ export async function PUT(
       null,
       200
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const error = err as { name?: string; code?: string };
     if (
-      err.name === "JWTExpired" ||
-      err.code === "ERR_JWS_SIGNATURE_VERIFICATION_FAILED" ||
-      err.code === "ERR_JWS_INVALID"
+      error.name === "JWTExpired" ||
+      error.code === "ERR_JWS_SIGNATURE_VERIFICATION_FAILED" ||
+      error.code === "ERR_JWS_INVALID"
     ) {
       return apiResponse("error", "Unauthorized", null, [], null, 401);
     }
@@ -125,11 +127,12 @@ export async function DELETE(
       null,
       200
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const error = err as { name?: string; code?: string };
     if (
-      err.name === "JWTExpired" ||
-      err.code === "ERR_JWS_SIGNATURE_VERIFICATION_FAILED" ||
-      err.code === "ERR_JWS_INVALID"
+      error.name === "JWTExpired" ||
+      error.code === "ERR_JWS_SIGNATURE_VERIFICATION_FAILED" ||
+      error.code === "ERR_JWS_INVALID"
     ) {
       return apiResponse("error", "Unauthorized", null, [], null, 401);
     }

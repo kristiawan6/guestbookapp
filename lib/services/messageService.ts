@@ -86,16 +86,6 @@ export const getMessages = async (
   };
 };
 
-export const updateMessageStatus = async (id: string, approved: boolean) => {
-  const updatedMessage = await prisma.message.update({
-    where: { id },
-    data: {
-      approved,
-    },
-  });
-
-  return updatedMessage;
-};
 
 export const updateMessage = async (
   id: string,

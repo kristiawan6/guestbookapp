@@ -4,7 +4,6 @@ import prisma from "@/lib/prisma";
 import { compare } from "bcrypt";
 import { SignJWT } from "jose";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 
 export async function login(
   prevState: { error?: string; success?: boolean; role?: string } | null,

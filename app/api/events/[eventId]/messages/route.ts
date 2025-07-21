@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createMessage, getMessages } from "@/lib/services/messageService";
 import { apiResponse } from "@/lib/api-response";
 

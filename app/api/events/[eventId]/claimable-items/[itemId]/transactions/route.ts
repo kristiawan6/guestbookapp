@@ -22,7 +22,7 @@ export async function GET(
     const { itemId } = await params;
     const transactions = await getClaimTransactions(itemId);
     return NextResponse.json(transactions);
-  } catch (err) {
+  } catch {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 }

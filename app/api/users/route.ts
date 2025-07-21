@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
       users.meta,
       200
     );
-  } catch (err) {
+  } catch {
     return apiResponse("error", "Unauthorized", null, [], null, 401);
   }
 }

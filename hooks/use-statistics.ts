@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useEventContext } from "./use-event-context";
 
@@ -30,7 +29,7 @@ export const useStatistics = () => {
     isLoading: isEventsLoading,
   } = useEventContext();
 
-  const { data: user, isLoading: isUserLoading } = useQuery({
+  const { data: user, isLoading: isUserLoading, error: userError } = useQuery({
     queryKey: ["user"],
     queryFn: fetchUser,
   });
@@ -38,7 +37,7 @@ export const useStatistics = () => {
   const {
     data: statistics,
     isLoading: isStatisticsLoading,
-    error,
+    error: statisticsError,
   } = useQuery({
     queryKey: ["statistics", selectedEventId],
     queryFn: () => fetchStatistics(selectedEventId!),
@@ -57,6 +56,6 @@ export const useStatistics = () => {
       deletedGuests: 51,
     },
     isLoading: isUserLoading || isStatisticsLoading || isEventsLoading,
-    error,
+    error: userError || statisticsError,
   };
 };

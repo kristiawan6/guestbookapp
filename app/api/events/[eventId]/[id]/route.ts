@@ -34,7 +34,7 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-k
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ eventId: string; id: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -44,8 +44,8 @@ export async function GET(
 
   try {
     await jwtVerify(token, secret);
-    const awaitedParams = await params;
-    const event = await getEventById(awaitedParams.id);
+    const { id } = await params;
+    const event = await getEventById(id);
     return apiResponse("success", "Event retrieved successfully", event, null, null, 200);
   } catch {
     return apiResponse("error", "Unauthorized", null, null, null, 401);
@@ -86,7 +86,7 @@ export async function GET(
  */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ eventId: string; id: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -106,8 +106,8 @@ export async function PUT(
     if (!validation.success) {
       return apiResponse("error", "Invalid input", null, validation.error.errors, null, 400);
     }
-    const awaitedParams = await params;
-    const event = await updateEvent(awaitedParams.id, validation.data);
+    const { id } = await params;
+    const event = await updateEvent(id, validation.data);
     return apiResponse("success", "Event updated successfully", event, null, null, 200);
   } catch (err) {
     if (err instanceof Error) {
@@ -143,7 +143,7 @@ export async function PUT(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ eventId: string; id: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -157,9 +157,8 @@ export async function DELETE(
     if (payload.role !== "SuperAdmin") {
       return apiResponse("error", "Forbidden", null, null, null, 403);
     }
-
-    const awaitedParams = await params;
-    await deleteEvent(awaitedParams.id);
+    const { id } = await params;
+    await deleteEvent(id);
     return apiResponse("success", "Event deleted successfully", null, null, null, 204);
   } catch {
     return apiResponse("error", "Unauthorized", null, null, null, 401);

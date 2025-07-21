@@ -2,7 +2,6 @@
 
 import {
   ArrowUpDown,
-  Copy,
   Pencil,
   Plus,
   Trash2,
@@ -54,7 +53,7 @@ export default function GuestCategoryPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] =
     useState<GuestCategory | null>(null);
-  const { selectedEventId, isLoading } = useStatistics();
+  const { selectedEventId } = useStatistics();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -124,11 +123,12 @@ export default function GuestCategoryPage() {
         showConfirmButton: false,
         timer: 1500,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unexpected error occurred";
       Swal.fire({
         icon: "error",
         title: "Operation Failed",
-        text: error.message,
+        text: message,
       });
     }
   };

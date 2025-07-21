@@ -34,6 +34,7 @@ export const createUser = async (data: UserData) => {
     },
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password: _, ...userWithoutPassword } = user;
   return userWithoutPassword;
 };
@@ -45,12 +46,16 @@ export const getUsers = async (
   sortKey: string = "username",
   sortOrder: string = "asc"
 ) => {
-  const where: any = {};
+  const where: {
+    OR?: {
+      [key: string]: { contains: string; mode: "insensitive" } | { equals: UserRole };
+    }[];
+  } = {};
   if (search) {
     where.OR = [
       { username: { contains: search, mode: "insensitive" } },
       { email: { contains: search, mode: "insensitive" } },
-      { role: { equals: search as any } },
+      { role: { equals: search as UserRole } },
     ];
   }
 
@@ -109,7 +114,8 @@ export const updateUser = async (id: string, data: Partial<UserData>) => {
     },
   });
 
-  const { password: _, ...userWithoutPassword } = updatedUser;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { password: __, ...userWithoutPassword } = updatedUser;
   return userWithoutPassword;
 };
 

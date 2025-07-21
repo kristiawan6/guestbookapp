@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getGuestStatistics } from "@/lib/services/statisticsService";
 import { jwtVerify } from "jose";
 import { apiResponse } from "@/lib/api-response";
@@ -29,8 +29,9 @@ export async function GET(
       null,
       200
     );
-  } catch (err: any) {
-    if (err.name === "JWTExpired" || err.code === "ERR_JWS_SIGNATURE_VERIFICATION_FAILED" || err.code === "ERR_JWS_INVALID") {
+  } catch (err: unknown) {
+    const error = err as { name?: string; code?: string };
+    if (error.name === "JWTExpired" || error.code === "ERR_JWS_SIGNATURE_VERIFICATION_FAILED" || error.code === "ERR_JWS_INVALID") {
       return apiResponse("error", "Unauthorized", null, [], null, 401);
     }
     if (err instanceof Error) {

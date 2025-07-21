@@ -23,7 +23,7 @@ export async function middleware(req: NextRequest) {
     }
 
     return NextResponse.next();
-  } catch (err) {
+  } catch {
     return NextResponse.redirect(new URL("/auth/login", req.url));
   }
 }

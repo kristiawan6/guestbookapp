@@ -41,8 +41,9 @@ export async function GET(
       broadcastTemplates.meta,
       200
     );
-  } catch (err: any) {
-    if (err.name === "JWTExpired" || err.code === "ERR_JWS_SIGNATURE_VERIFICATION_FAILED" || err.code === "ERR_JWS_INVALID") {
+  } catch (err: unknown) {
+    const error = err as { name?: string; code?: string };
+    if (error.name === "JWTExpired" || error.code === "ERR_JWS_SIGNATURE_VERIFICATION_FAILED" || error.code === "ERR_JWS_INVALID") {
       return apiResponse("error", "Unauthorized", null, [], null, 401);
     }
     if (err instanceof Error) {
@@ -89,8 +90,9 @@ export async function POST(
       null,
       201
     );
-  } catch (err: any) {
-    if (err.name === "JWTExpired" || err.code === "ERR_JWS_SIGNATURE_VERIFICATION_FAILED" || err.code === "ERR_JWS_INVALID") {
+  } catch (err: unknown) {
+    const error = err as { name?: string; code?: string };
+    if (error.name === "JWTExpired" || error.code === "ERR_JWS_SIGNATURE_VERIFICATION_FAILED" || error.code === "ERR_JWS_INVALID") {
       return apiResponse("error", "Unauthorized", null, [], null, 401);
     }
     if (err instanceof Error) {

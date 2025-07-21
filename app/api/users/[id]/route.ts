@@ -33,7 +33,7 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-k
  */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -48,7 +48,8 @@ export async function PUT(
     if (!validation.success) {
       return apiResponse("error", "Invalid input", null, validation.error.errors, null, 400);
     }
-    const user = await updateUser(params.id, validation.data);
+    const { id } = await params;
+    const user = await updateUser(id, validation.data);
     return apiResponse(
       "success",
       "User updated successfully",
@@ -84,7 +85,7 @@ export async function PUT(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -94,7 +95,8 @@ export async function DELETE(
 
   try {
     await jwtVerify(token, secret);
-    await deleteUser(params.id);
+    const { id } = await params;
+    await deleteUser(id);
     return apiResponse(
       "success",
       "User deleted successfully",
@@ -103,7 +105,7 @@ export async function DELETE(
       null,
       200
     );
-  } catch (err) {
+  } catch {
     return apiResponse("error", "Unauthorized", null, [], null, 401);
   }
 }

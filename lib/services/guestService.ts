@@ -242,7 +242,6 @@ export const exportGuests = async (eventId: string) => {
     worksheet[address].s = headerStyle;
   }
 
-  console.log(worksheet);
 
   const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
   return buffer;

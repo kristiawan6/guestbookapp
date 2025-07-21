@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createGuest, getGuests } from "@/lib/services/guestService";
 import { jwtVerify } from "jose";
 import { apiResponse } from "@/lib/api-response";
@@ -76,7 +76,7 @@ export async function GET(
       guests.meta,
       200
     );
-  } catch (err) {
+  } catch {
     return apiResponse("error", "Unauthorized", null, [], null, 401);
   }
 }

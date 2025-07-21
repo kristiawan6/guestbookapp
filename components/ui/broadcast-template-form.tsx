@@ -80,7 +80,7 @@ Mengirimkan QR code undangan sebagai peserta`
           alert(`Image upload failed: ${result.error}`);
           return;
         }
-      } catch (_error) {
+      } catch {
         alert("An error occurred while uploading the image.");
         return;
       }

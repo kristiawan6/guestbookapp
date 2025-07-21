@@ -8,7 +8,8 @@ const fetchUser = async () => {
   if (!res.ok) {
     throw new Error("Network response was not ok");
   }
-  return res.json();
+  const data = await res.json();
+  return data.data;
 };
 
 export const usePrefetchUser = () => {

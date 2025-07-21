@@ -28,7 +28,7 @@ export async function GET(
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
     return new Response(buffer, { headers });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 }

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import {
   createClaimableItem,
   getClaimableItems,
@@ -42,7 +42,7 @@ export async function GET(
       claimableItems.meta,
       200
     );
-  } catch (err) {
+  } catch {
     return apiResponse("error", "Unauthorized", null, [], null, 401);
   }
 }
