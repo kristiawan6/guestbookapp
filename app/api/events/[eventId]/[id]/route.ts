@@ -10,6 +10,28 @@ import { eventSchema } from "@/lib/validations";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
+/**
+ * @swagger
+ * /api/events/{eventId}/{id}:
+ *   get:
+ *     summary: Get an event by ID
+ *     parameters:
+ *       - in: path
+ *         name: eventId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Event retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ */
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -30,6 +52,38 @@ export async function GET(
   }
 }
 
+/**
+ * @swagger
+ * /api/events/{eventId}/{id}:
+ *   put:
+ *     summary: Update an event
+ *     parameters:
+ *       - in: path
+ *         name: eventId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Event'
+ *     responses:
+ *       200:
+ *         description: Event updated successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -63,6 +117,30 @@ export async function PUT(
   }
 }
 
+/**
+ * @swagger
+ * /api/events/{eventId}/{id}:
+ *   delete:
+ *     summary: Delete an event
+ *     parameters:
+ *       - in: path
+ *         name: eventId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Event deleted successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ */
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }

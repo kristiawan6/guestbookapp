@@ -6,6 +6,43 @@ import { guestSchema } from "@/lib/validations";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
+/**
+ * @swagger
+ * /api/events/{eventId}/guests:
+ *   get:
+ *     summary: Get all guests for an event
+ *     parameters:
+ *       - in: path
+ *         name: eventId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: sortKey
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Guests retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ */
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ eventId: string }> }
@@ -44,6 +81,31 @@ export async function GET(
   }
 }
 
+/**
+ * @swagger
+ * /api/events/{eventId}/guests:
+ *   post:
+ *     summary: Create a new guest for an event
+ *     parameters:
+ *       - in: path
+ *         name: eventId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Guest'
+ *     responses:
+ *       201:
+ *         description: Guest created successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ */
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ eventId: string }> }
