@@ -257,7 +257,7 @@ export default function UserManagementPage() {
                       defaultValue={selectedUser?.role}
                       className="col-span-3 border rounded-md"
                     >
-                      <option value="Admin">Admin</option>
+                      <option value="AdminEvents">AdminEvents</option>
                       <option value="SuperAdmin">SuperAdmin</option>
                     </select>
                   </div>
@@ -334,7 +334,15 @@ export default function UserManagementPage() {
                 <TableCell>{user.username}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.role}</TableCell>
-                <TableCell>{user.isActive ? "Y" : "N"}</TableCell>
+                <TableCell>
+                  <span
+                    className={`px-2 py-1 rounded-full text-white ${
+                      user.isActive ? "bg-green-500" : "bg-red-500"
+                    }`}
+                  >
+                    {user.isActive ? "Active" : "Inactive"}
+                  </span>
+                </TableCell>
                 <TableCell>
                   <Button
                     variant="outline"

@@ -37,11 +37,7 @@ import { useStatistics } from "@/hooks/use-statistics";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/app/auth/logout/actions";
 import Image from "next/image";
-
-type Event = {
-  id: string;
-  name: string;
-};
+import { EventProvider, useEventContext, Event } from "@/hooks/use-event-context";
 
 const menuItems = [
   {
@@ -95,11 +91,11 @@ const menuItems = [
 ];
 
 function Header() {
-  const { user, events, selectedEventId, setSelectedEventId } =
-    useStatistics();
+  const { user } = useStatistics();
+  const { events, selectedEventId, setSelectedEventId } = useEventContext();
   const { toggleSidebar } = useSidebar();
 
-  const selectedEvent = events?.find((event: Event) => event.id === selectedEventId);
+  const selectedEvent = events?.find((event) => event.id === selectedEventId);
 
   return (
     <header className="relative z-10 flex items-center justify-between p-4 bg-white shadow-sm">
@@ -117,7 +113,7 @@ function Header() {
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            {events?.map((event: Event) => (
+            {events?.map((event) => (
               <DropdownMenuItem
                 key={event.id}
                 onSelect={() => setSelectedEventId(event.id)}
@@ -155,13 +151,10 @@ function Header() {
   );
 }
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const { user } = useStatistics();
   const pathname = usePathname();
+
   return (
     <SidebarProvider className="flex min-h-screen bg-gray-50">
       <Sidebar>
@@ -218,5 +211,17 @@ export default function AdminLayout({
         </footer>
       </SidebarInset>
     </SidebarProvider>
+  );
+}
+
+export default function AdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <EventProvider>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </EventProvider>
   );
 }

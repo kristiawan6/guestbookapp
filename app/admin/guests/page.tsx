@@ -366,8 +366,16 @@ export default function GuestPage() {
               className="mr-2"
               disabled={isLoading}
               onClick={() => {
-                setSelectedGuest(null);
-                setIsDialogOpen(true);
+                if (guestCategories.length === 0) {
+                  Swal.fire({
+                    icon: "error",
+                    title: "No Guest Category",
+                    text: "Please create a guest category first before adding a guest.",
+                  });
+                } else {
+                  setSelectedGuest(null);
+                  setIsDialogOpen(true);
+                }
               }}
             >
               <Plus className="mr-2 h-4 w-4" /> Add

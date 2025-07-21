@@ -207,7 +207,7 @@ export default function GuestCategoryPage() {
           />
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="mr-2" disabled={isLoading}>
+              <Button className="mr-2">
                 <Plus className="mr-2 h-4 w-4" /> Add
               </Button>
             </DialogTrigger>
@@ -336,7 +336,15 @@ export default function GuestCategoryPage() {
                 <TableCell>{category.name}</TableCell>
                 <TableCell>{category.description}</TableCell>
                 <TableCell>{category.quota}</TableCell>
-                <TableCell>{category.isActive ? "Y" : "N"}</TableCell>
+                <TableCell>
+                  <span
+                    className={`px-2 py-1 rounded-full text-white ${
+                      category.isActive ? "bg-green-500" : "bg-red-500"
+                    }`}
+                  >
+                    {category.isActive ? "Active" : "Inactive"}
+                  </span>
+                </TableCell>
                 <TableCell>
                   <Button
                     variant="outline"

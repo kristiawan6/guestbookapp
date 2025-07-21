@@ -150,17 +150,25 @@ export default function EventManagementPage() {
           />
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="mr-2">
+              <Button
+                className="mr-2"
+                onClick={() => {
+                  setSelectedEvent(null);
+                }}
+              >
                 <Plus className="mr-2 h-4 w-4" /> Add
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>
                   {selectedEvent ? "Edit" : "Add"} Event
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleAddEvent}>
+              <form
+                key={selectedEvent ? "edit-event-form" : "add-event-form"}
+                onSubmit={handleAddEvent}
+              >
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="name" className="text-right">
@@ -239,7 +247,15 @@ export default function EventManagementPage() {
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{event.name}</TableCell>
                 <TableCell>{event.description}</TableCell>
-                <TableCell>{event.isActive ? "Y" : "N"}</TableCell>
+                <TableCell>
+                  <span
+                    className={`px-2 py-1 rounded-full text-white ${
+                      event.isActive ? "bg-green-500" : "bg-red-500"
+                    }`}
+                  >
+                    {event.isActive ? "Active" : "Inactive"}
+                  </span>
+                </TableCell>
                 <TableCell>
                   <Button
                     variant="outline"
