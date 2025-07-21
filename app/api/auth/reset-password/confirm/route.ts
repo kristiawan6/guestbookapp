@@ -20,25 +20,37 @@ export async function POST(req: NextRequest) {
       return apiResponse("error", "Invalid or expired OTP", null, [], null, 400);
     }
 
-    const hashedPassword = await hash(password, 12);
+    if (password) {
+      const hashedPassword = await hash(password, 12);
 
-    await prisma.user.update({
-      where: { email },
-      data: {
-        password: hashedPassword,
-        otp: null,
-        otpExpires: null,
-      },
-    });
+      await prisma.user.update({
+        where: { email },
+        data: {
+          password: hashedPassword,
+          otp: null,
+          otpExpires: null,
+        },
+      });
 
-    return apiResponse(
-      "success",
-      "Password reset successfully",
-      null,
-      null,
-      null,
-      200
-    );
+      return apiResponse(
+        "success",
+        "Password reset successfully",
+        null,
+        null,
+        null,
+        200
+      );
+    } else {
+      // Only verify OTP
+      return apiResponse(
+        "success",
+        "OTP verified successfully",
+        null,
+        null,
+        null,
+        200
+      );
+    }
   } catch (err) {
     if (err instanceof Error) {
       return apiResponse("error", err.message, null, [], null, 400);

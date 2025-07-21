@@ -3,8 +3,16 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import Swal from "sweetalert2";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function ResetPasswordPage() {
   const [email, setEmail] = useState("");
@@ -12,6 +20,8 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [step, setStep] = useState(1);
+  const [isOtpVerified, setIsOtpVerified] = useState(false);
+  const router = useRouter();
 
   const handleRequestOtp = async () => {
     try {
@@ -32,6 +42,37 @@ export default function ResetPasswordPage() {
       Swal.fire({
         icon: "success",
         title: "OTP sent successfully",
+        showConfirmButton: false,
+        timer: 1500,
+      });
+    } catch (error: any) {
+      Swal.fire({
+        icon: "error",
+        title: "Operation Failed",
+        text: error.message,
+      });
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    try {
+      const response = await fetch("/api/auth/reset-password/confirm", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, otp, password: "" }), // password can be empty for verification
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Something went wrong");
+      }
+
+      setIsOtpVerified(true);
+      Swal.fire({
+        icon: "success",
+        title: "OTP verified successfully",
         showConfirmButton: false,
         timer: 1500,
       });
@@ -72,6 +113,8 @@ export default function ResetPasswordPage() {
         title: "Password reset successfully",
         showConfirmButton: false,
         timer: 1500,
+      }).then(() => {
+        router.push("/auth/login");
       });
     } catch (error: any) {
       Swal.fire({
@@ -96,7 +139,9 @@ export default function ResetPasswordPage() {
                   name="email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setEmail(e.target.value)
+                  }
                   required
                 />
               </div>
@@ -108,44 +153,83 @@ export default function ResetPasswordPage() {
         )}
         {step === 2 && (
           <div>
-            <h2 className="text-2xl font-bold text-center">Enter OTP</h2>
+            <h2 className="text-2xl font-bold text-center">
+              {isOtpVerified ? "Reset Password" : "Verify"}
+            </h2>
+            <p className="text-center text-gray-500">
+              {isOtpVerified
+                ? "You can now set a new password."
+                : "Your code was sent to you via email"}
+            </p>
             <div className="mt-8 space-y-6">
-              <div>
-                <Label htmlFor="otp">OTP</Label>
-                <Input
-                  id="otp"
-                  name="otp"
-                  type="text"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="password">New Password</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <Button onClick={handleResetPassword} className="w-full">
-                Reset Password
-              </Button>
+              {!isOtpVerified ? (
+                <>
+                  <div className="flex justify-center">
+                    <InputOTP
+                      maxLength={6}
+                      value={otp}
+                      onChange={(value) => setOtp(value)}
+                    >
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </div>
+                  <Button onClick={handleVerifyOtp} className="w-full">
+                    Verify
+                  </Button>
+                  <div className="text-center">
+                    <p className="text-sm">
+                      Didn't receive code?{" "}
+                      <Link
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleRequestOtp();
+                        }}
+                        className="text-blue-600 hover:underline"
+                      >
+                        Request again
+                      </Link>
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <Label htmlFor="password">New Password</Label>
+                    <PasswordInput
+                      id="password"
+                      name="password"
+                      value={password}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setPassword(e.target.value)
+                      }
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="confirmPassword">Confirm Password</Label>
+                    <PasswordInput
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      value={confirmPassword}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                        setConfirmPassword(e.target.value)
+                      }
+                      required
+                    />
+                  </div>
+                  <Button onClick={handleResetPassword} className="w-full">
+                    Reset Password
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         )}

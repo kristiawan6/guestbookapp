@@ -28,11 +28,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    await sendEmail(
-      email,
-      "Your OTP for password reset",
-      `Your OTP is ${otp}`
-    );
+    await sendEmail(email, "Your OTP for password reset", otp);
 
     return apiResponse(
       "success",

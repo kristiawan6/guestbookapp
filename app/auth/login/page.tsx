@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import React, { useActionState, useEffect } from "react";
 import { login } from "@/app/auth/login/actions";
@@ -76,17 +77,16 @@ export default function LoginPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input
+              <PasswordInput
                 id="password"
                 name="password"
-                type="password"
                 placeholder="Enter your password"
                 required
               />
             </div>
             <div className="flex items-center justify-between">
               <Link
-                href="#"
+                href="/auth/reset-password"
                 className="text-sm text-blue-600 hover:underline"
               >
                 Forgot Password?
