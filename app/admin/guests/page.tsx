@@ -4,7 +4,6 @@ import {
   ArrowUpDown,
   ChevronDown,
   Copy,
-  Download,
   Mail,
   MessageSquare,
   Pencil,
@@ -53,7 +52,6 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStatistics } from "@/hooks/use-statistics";
-import Papa from "papaparse";
 import Swal from "sweetalert2";
 import { Textarea } from "@/components/ui/textarea";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
@@ -228,11 +226,12 @@ export default function GuestPage() {
           showConfirmButton: false,
           timer: 1500,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "An unexpected error occurred";
         Swal.fire({
           icon: "error",
           title: "Import Failed",
-          text: error.message,
+          text: message,
         });
       }
     }
@@ -580,7 +579,7 @@ export default function GuestPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {guests.map((guest, index) => (
+              {guests.map((guest) => (
                 <TableRow key={guest.id}>
                   <TableCell className="p-4 text-center">
                     <Checkbox

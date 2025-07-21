@@ -11,9 +11,9 @@ import Link from "next/link";
 import { usePrefetchUser } from "@/hooks/use-prefetch-user";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-
-export default function LoginPage() {
-  const [state, formAction] = useActionState(login, { error: "" });
+ 
+ export default function LoginPage() {
+   const [state, formAction] = useActionState(login, { error: "" });
   const router = useRouter();
   const [loading, setLoading] = React.useState(false);
   const [progress, setProgress] = React.useState(0);

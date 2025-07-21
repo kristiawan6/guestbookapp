@@ -8,9 +8,9 @@ import {
 } from "@/components/ui/card";
 import { useStatistics } from "@/hooks/use-statistics";
 import { BarChart } from "lucide-react";
-
-export default function DashboardPage() {
-  const { statistics, isLoading, error } = useStatistics();
+ 
+ export default function DashboardPage() {
+   const { statistics, isLoading, error } = useStatistics();
 
   if (isLoading) {
     return <div>Loading...</div>;

@@ -13,9 +13,9 @@ import {
 } from "@/components/ui/input-otp";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
-export default function ResetPasswordPage() {
-  const [email, setEmail] = useState("");
+ 
+ export default function ResetPasswordPage() {
+   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -45,11 +45,12 @@ export default function ResetPasswordPage() {
         showConfirmButton: false,
         timer: 1500,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unexpected error occurred";
       Swal.fire({
         icon: "error",
         title: "Operation Failed",
-        text: error.message,
+        text: message,
       });
     }
   };
@@ -76,11 +77,12 @@ export default function ResetPasswordPage() {
         showConfirmButton: false,
         timer: 1500,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unexpected error occurred";
       Swal.fire({
         icon: "error",
         title: "Operation Failed",
-        text: error.message,
+        text: message,
       });
     }
   };
@@ -116,11 +118,12 @@ export default function ResetPasswordPage() {
       }).then(() => {
         router.push("/auth/login");
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "An unexpected error occurred";
       Swal.fire({
         icon: "error",
         title: "Operation Failed",
-        text: error.message,
+        text: message,
       });
     }
   };

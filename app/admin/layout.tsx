@@ -37,10 +37,10 @@ import { useStatistics } from "@/hooks/use-statistics";
 import { Button } from "@/components/ui/button";
 import { logout } from "@/app/auth/logout/actions";
 import Image from "next/image";
-import { EventProvider, useEventContext, Event } from "@/hooks/use-event-context";
-
-const menuItems = [
-  {
+import { EventProvider, useEventContext } from "@/hooks/use-event-context";
+ 
+ const menuItems = [
+   {
     href: "/admin/dashboard",
     icon: Home,
     label: "Dashboard",
@@ -103,26 +103,32 @@ function Header() {
         <Button variant="ghost" size="icon" onClick={toggleSidebar}>
           <Menu className="h-6 w-6" />
         </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <div className="flex items-center gap-2 cursor-pointer">
-              <h1 className="text-lg font-semibold">
-                {selectedEvent?.name || "Select an Event"}
-              </h1>
-              <ChevronDown className="h-5 w-5 text-gray-500" />
-            </div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            {events?.map((event) => (
-              <DropdownMenuItem
-                key={event.id}
-                onSelect={() => setSelectedEventId(event.id)}
-              >
-                {event.name}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {user?.role === "SuperAdmin" ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="flex items-center gap-2 cursor-pointer">
+                <h1 className="text-lg font-semibold">
+                  {selectedEvent?.name || "Select an Event"}
+                </h1>
+                <ChevronDown className="h-5 w-5 text-gray-500" />
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              {events?.map((event) => (
+                <DropdownMenuItem
+                  key={event.id}
+                  onSelect={() => setSelectedEventId(event.id)}
+                >
+                  {event.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <h1 className="text-lg font-semibold">
+            {selectedEvent?.name || "Event"}
+          </h1>
+        )}
       </div>
       <div className="flex items-center gap-4">
         <DropdownMenu>
@@ -202,7 +208,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       </Sidebar>
       <SidebarInset className="flex flex-col h-screen w-full overflow-x-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+       <main className="flex-1 overflow-y-auto p-6">{children}</main>
         <footer className="p-4 text-center text-sm text-gray-500 bg-white">
           © 2025, Migunesia. All rights reserved.{" "}
           <Link href="#" className="text-blue-500">
