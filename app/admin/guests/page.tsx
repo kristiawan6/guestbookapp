@@ -684,7 +684,7 @@ export default function GuestPage() {
                     <AccordionContent>
                       <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="name" className="text-left">
+                          <Label htmlFor="name" className="text-left" required>
                             Fullname
                           </Label>
                           <Input
@@ -698,6 +698,7 @@ export default function GuestPage() {
                           <Label
                             htmlFor="guestCategoryId"
                             className="text-left"
+                            required
                           >
                             Category
                           </Label>

@@ -58,8 +58,10 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       role: user.role,
       events: user.events.map((e) => e.eventId),
+      sub: user.id,
     })
       .setProtectedHeader({ alg })
+      .setSubject(user.id)
       .setExpirationTime("2h")
       .setIssuedAt()
       .sign(secret);

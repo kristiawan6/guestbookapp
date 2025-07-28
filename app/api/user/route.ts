@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
       null,
       200
     );
-  } catch {
-    return apiResponse("error", "Unauthorized", null, [], null, 401);
+  } catch (err: any) {
+    return apiResponse("error", err.message || "Unauthorized", null, [], null, 401);
   }
 }

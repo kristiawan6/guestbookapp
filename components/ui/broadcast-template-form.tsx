@@ -165,7 +165,7 @@ Mengirimkan QR code undangan sebagai peserta`
             className="bg-white p-6 rounded-lg shadow"
           >
             <div className="mb-4">
-              <Label htmlFor="name">Template Name</Label>
+              <Label htmlFor="name" required>Template Name</Label>
               <Input
                 id="name"
                 name="name"

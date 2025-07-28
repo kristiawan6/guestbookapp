@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import {
   deleteClaimableItem,
+  getClaimableItem,
   updateClaimableItem,
 } from "@/lib/services/claimService";
 import { jwtVerify } from "jose";
@@ -8,6 +9,36 @@ import { apiResponse } from "@/lib/api-response";
 import { claimableItemSchema } from "@/lib/validations";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
+
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ itemId: string }> }
+) {
+  const token = req.cookies.get("token")?.value;
+
+  if (!token) {
+    return apiResponse("error", "Unauthorized", null, [], null, 401);
+  }
+
+  try {
+    await jwtVerify(token, secret);
+    const { itemId } = await params;
+    const item = await getClaimableItem(itemId);
+    return apiResponse(
+      "success",
+      "Claimable item retrieved successfully",
+      item,
+      null,
+      null,
+      200
+    );
+  } catch (err) {
+    if (err instanceof Error) {
+      return apiResponse("error", err.message, null, [], null, 400);
+    }
+    return apiResponse("error", "Unauthorized", null, [], null, 401);
+  }
+}
 
 export async function PUT(
   req: NextRequest,

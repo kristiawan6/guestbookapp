@@ -26,6 +26,7 @@ export const broadcastTemplateSchema = z.object({
 
 export const claimableItemSchema = z.object({
   name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
   quantity: z.number().int().positive("Quantity must be a positive number"),
 });
 

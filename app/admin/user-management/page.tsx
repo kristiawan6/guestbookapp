@@ -214,7 +214,7 @@ export default function UserManagementPage() {
               >
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="username" className="text-right">
+                    <Label htmlFor="username" className="text-right" required>
                       Username
                     </Label>
                     <Input
@@ -225,7 +225,7 @@ export default function UserManagementPage() {
                     />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="email" className="text-right">
+                    <Label htmlFor="email" className="text-right" required>
                       Email
                     </Label>
                     <Input
@@ -237,7 +237,7 @@ export default function UserManagementPage() {
                   </div>
                   {!selectedUser && (
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="password" className="text-right">
+                      <Label htmlFor="password" className="text-right" required>
                         Password
                       </Label>
                       <Input

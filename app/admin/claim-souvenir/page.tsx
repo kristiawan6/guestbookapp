@@ -1,21 +1,14 @@
 "use client";
 
 import {
-  ArrowUpDown,
   Pencil,
   Plus,
   Trash2,
   Upload,
+  BarChart2,
 } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,8 +20,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useStatistics } from "@/hooks/use-statistics";
-import Papa from "papaparse";
 import Swal from "sweetalert2";
+import * as XLSX from "xlsx";
 
 type ClaimableItem = {
   id: string;
@@ -77,7 +70,7 @@ export default function ClaimSouvenirPage() {
     }
   }, [fetchItems, selectedEventId]);
 
-  const handleAddItem = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveItem = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selectedEventId) {
       console.error("Event ID is not available.");
@@ -85,17 +78,23 @@ export default function ClaimSouvenirPage() {
     }
     const formData = new FormData(event.currentTarget);
     const data = Object.fromEntries(formData.entries());
+    const { totalQuantity, ...rest } = data;
+    const body = {
+      ...rest,
+      quantity: parseInt(totalQuantity as string),
+    };
 
-    await fetch(`/api/events/${selectedEventId}/claimable-items`, {
-      method: "POST",
+    const url = selectedItem
+      ? `/api/events/${selectedEventId}/claimable-items/${selectedItem.id}`
+      : `/api/events/${selectedEventId}/claimable-items`;
+    const method = selectedItem ? "PUT" : "POST";
+
+    await fetch(url, {
+      method,
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        ...data,
-        totalQuantity: parseInt(data.totalQuantity as string),
-        remainingQuantity: parseInt(data.totalQuantity as string),
-      }),
+      body: JSON.stringify(body),
     });
 
     fetchItems();
@@ -129,42 +128,26 @@ export default function ClaimSouvenirPage() {
   };
 
   const handleExport = () => {
-    const csv = Papa.unparse(items);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", "claimable-items.csv");
-    link.style.visibility = "hidden";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-
-  const handleSort = (key: keyof ClaimableItem) => {
-    if (sortKey === key) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortKey(key);
-      setSortOrder("asc");
-    }
+    const worksheet = XLSX.utils.json_to_sheet(items);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Souvenirs");
+    XLSX.writeFile(workbook, "souvenirs.xlsx");
   };
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Claim Souvenir & etc</h1>
+        <h1 className="text-2xl font-bold">
+          Record a point, souvenir, photobooth or goodybag with the same QR Code
+        </h1>
         <div className="flex items-center gap-2">
-          <Input
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-80"
-          />
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="mr-2" disabled={isLoading}>
+              <Button
+                className="mr-2"
+                disabled={isLoading}
+                onClick={() => setSelectedItem(null)}
+              >
                 <Plus className="mr-2 h-4 w-4" /> Add
               </Button>
             </DialogTrigger>
@@ -174,10 +157,10 @@ export default function ClaimSouvenirPage() {
                   {selectedItem ? "Edit" : "Add"} Claimable Item
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleAddItem}>
+              <form onSubmit={handleSaveItem}>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">
+                    <Label htmlFor="name" className="text-right" required>
                       Name
                     </Label>
                     <Input
@@ -199,7 +182,11 @@ export default function ClaimSouvenirPage() {
                     />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="totalQuantity" className="text-right">
+                    <Label
+                      htmlFor="totalQuantity"
+                      className="text-right"
+                      required
+                    >
                       Total Quantity
                     </Label>
                     <Input
@@ -220,97 +207,32 @@ export default function ClaimSouvenirPage() {
           </Button>
         </div>
       </div>
-      <div className="bg-white p-4 rounded-lg shadow">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>No.</TableHead>
-              <TableHead>
-                <Button variant="ghost" onClick={() => handleSort("name")}>
-                  Name
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort("description")}
-                >
-                  Description
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort("totalQuantity")}
-                >
-                  Total Quantity
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort("remainingQuantity")}
-                >
-                  Remaining Quantity
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead className="text-center">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item, index) => (
-              <TableRow key={item.id}>
-                <TableCell>{index + 1}</TableCell>
-                <TableCell>{item.name}</TableCell>
-                <TableCell>{item.description}</TableCell>
-                <TableCell>{item.totalQuantity}</TableCell>
-                <TableCell>{item.remainingQuantity}</TableCell>
-                <TableCell>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mr-2"
-                    onClick={() => handleEdit(item)}
-                  >
-                    <Pencil className="mr-2 h-4 w-4" /> Edit
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDelete(item.id)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <div className="flex justify-end items-center gap-2 mt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage(page - 1)}
-            disabled={page === 1}
-          >
-            Previous
-          </Button>
-          <span>
-            Page {page} of {meta?.totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage(page + 1)}
-            disabled={page === meta?.totalPages}
-          >
-            Next
-          </Button>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {items.map((item) => (
+          <div key={item.id} className="bg-white p-4 rounded-lg shadow">
+            <div className="flex justify-between items-start">
+              <h2 className="text-lg font-semibold">{item.name}</h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleEdit(item)}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex justify-between items-center mt-4">
+              <BarChart2 className="h-8 w-8 text-gray-400" />
+              <span className="text-2xl font-bold text-red-500">
+                {item.remainingQuantity}
+              </span>
+            </div>
+            <Link href={`/admin/claim-souvenir/${item.id}`}>
+              <Button variant="outline" className="w-full mt-4">
+                Run Application
+              </Button>
+            </Link>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -78,18 +78,25 @@ export const getClaimableItems = async (
   };
 };
 
+export const getClaimableItem = async (id: string) => {
+  const item = await prisma.claimableItem.findUnique({
+    where: { id },
+  });
+  return item;
+};
+
 export const updateClaimableItem = async (
   id: string,
-  data: Partial<ClaimableItemData>
+  data: Partial<ClaimableItemData> & { quantity?: number }
 ) => {
-  const { name, description, totalQuantity } = data;
+  const { name, description, quantity } = data;
 
   const updatedClaimableItem = await prisma.claimableItem.update({
     where: { id },
     data: {
       name,
       description,
-      totalQuantity,
+      totalQuantity: quantity,
     },
   });
 
@@ -108,6 +115,17 @@ export const recordClaimTransaction = async (
   adminId: string
 ) => {
   const transaction = await prisma.$transaction(async (tx) => {
+    const existingTransaction = await tx.claimTransaction.findFirst({
+      where: {
+        guestId,
+        claimableItemId: itemId,
+      },
+    });
+
+    if (existingTransaction) {
+      throw new Error("Guest has already claimed this item");
+    }
+
     const item = await tx.claimableItem.findUnique({
       where: { id: itemId },
     });

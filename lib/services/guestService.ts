@@ -107,6 +107,13 @@ export const getGuests = async (
   };
 };
 
+export const getAllGuests = async (eventId: string) => {
+  const guests = await prisma.guest.findMany({
+    where: { eventId },
+  });
+  return guests;
+};
+
 export const updateGuest = async (id: string, data: Partial<GuestData>) => {
   const {
     name,

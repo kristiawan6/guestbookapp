@@ -64,10 +64,11 @@ export async function POST(
     if (!validation.success) {
       return apiResponse("error", "Invalid input", null, validation.error.errors, null, 400);
     }
-    const { name, quantity } = validation.data;
+    const { name, description, quantity } = validation.data;
     const { eventId } = await params;
     const claimableItem = await createClaimableItem(eventId, {
       name,
+      description,
       totalQuantity: quantity,
     });
     return apiResponse(
