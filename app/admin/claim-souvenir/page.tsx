@@ -7,7 +7,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -38,6 +38,13 @@ type ClaimableItem = {
   remainingQuantity: number;
 };
 
+type Meta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
 export default function ClaimSouvenirPage() {
   const [items, setItems] = useState<ClaimableItem[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -47,14 +54,14 @@ export default function ClaimSouvenirPage() {
   const { selectedEventId, isLoading } = useStatistics();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [meta, setMeta] = useState<any>(null);
+  const [meta, setMeta] = useState<Meta | null>(null);
   const [sortKey, setSortKey] = useState<keyof ClaimableItem>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const fetchItems = () => {
+  const fetchItems = useCallback(() => {
     if (selectedEventId) {
       fetch(
-        `/api/events/${selectedEventId}/claimable-items?search=${search}&page=${page}`
+        `/api/events/${selectedEventId}/claimable-items?search=${search}&page=${page}&sortKey=${sortKey}&sortOrder=${sortOrder}`
       )
         .then((res) => res.json())
         .then((data) => {
@@ -62,11 +69,13 @@ export default function ClaimSouvenirPage() {
           setMeta(data.meta);
         });
     }
-  };
+  }, [selectedEventId, search, page, sortKey, sortOrder]);
 
   useEffect(() => {
-    fetchItems();
-  }, [selectedEventId, search, page, sortKey, sortOrder]);
+    if (selectedEventId) {
+      fetchItems();
+    }
+  }, [fetchItems, selectedEventId]);
 
   const handleAddItem = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -132,15 +141,6 @@ export default function ClaimSouvenirPage() {
     document.body.removeChild(link);
   };
 
-  const sortedItems = [...items].sort((a, b) => {
-    if (a[sortKey] < b[sortKey]) {
-      return sortOrder === "asc" ? -1 : 1;
-    }
-    if (a[sortKey] > b[sortKey]) {
-      return sortOrder === "asc" ? 1 : -1;
-    }
-    return 0;
-  });
 
   const handleSort = (key: keyof ClaimableItem) => {
     if (sortKey === key) {
@@ -262,7 +262,7 @@ export default function ClaimSouvenirPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedItems.map((item, index) => (
+            {items.map((item, index) => (
               <TableRow key={item.id}>
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{item.name}</TableCell>

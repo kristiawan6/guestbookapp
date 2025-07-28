@@ -1,13 +1,24 @@
-/**
- * Placeholder for Email service integration (e.g., SendGrid, Resend).
- * In a real application, this service would handle sending emails.
- */
+import { Resend } from "resend";
+import { OtpEmail } from "@/emails/otp-email";
+import React from "react";
 
-export const sendEmail = async (to: string, subject: string, body: string): Promise<boolean> => {
-  console.log(`Simulating sending email to ${to}:`);
-  console.log(`Subject: ${subject}`);
-  console.log(`Body: ${body}`);
-  // In a real implementation, you would use the email API client here.
-  // For now, we'll just simulate a successful send.
-  return true;
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export const sendEmail = async (
+  to: string,
+  subject: string,
+  otp: string
+): Promise<boolean> => {
+  try {
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM || "onboarding@resend.dev",
+      to,
+      subject,
+      react: OtpEmail({ otp }) as React.ReactElement,
+    });
+    return true;
+  } catch (error) {
+    console.error("Error sending email:", error);
+    return false;
+  }
 };

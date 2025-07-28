@@ -1,11 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 import prisma from "@/lib/prisma";
 import { apiResponse } from "@/lib/api-response";
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET || "your-secret-key"
-);
+const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
 export async function GET(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
@@ -33,7 +31,7 @@ export async function GET(req: NextRequest) {
       null,
       200
     );
-  } catch (err) {
+  } catch {
     return apiResponse("error", "Unauthorized", null, [], null, 401);
   }
 }

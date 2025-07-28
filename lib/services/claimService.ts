@@ -1,6 +1,15 @@
 import prisma from "@/lib/prisma";
 
-export const createClaimableItem = async (eventId: string, data: any) => {
+interface ClaimableItemData {
+  name: string;
+  description?: string;
+  totalQuantity: number;
+}
+
+export const createClaimableItem = async (
+  eventId: string,
+  data: ClaimableItemData
+) => {
   const { name, description, totalQuantity } = data;
 
   if (!name || !totalQuantity) {
@@ -28,9 +37,17 @@ export const getClaimableItems = async (
   eventId: string,
   search?: string,
   page: number = 1,
-  limit: number = 10
+  limit: number = 10,
+  sortKey: string = "name",
+  sortOrder: string = "asc"
 ) => {
-  const where: any = { eventId };
+  const where: {
+    eventId: string;
+    OR?: (
+      | { name: { contains: string; mode: "insensitive" } }
+      | { description: { contains: string; mode: "insensitive" } }
+    )[];
+  } = { eventId };
   if (search) {
     where.OR = [
       { name: { contains: search, mode: "insensitive" } },
@@ -38,13 +55,17 @@ export const getClaimableItems = async (
     ];
   }
 
-  const claimableItems = await prisma.claimableItem.findMany({
-    where,
-    skip: (page - 1) * limit,
-    take: limit,
-  });
-
-  const total = await prisma.claimableItem.count({ where });
+  const [claimableItems, total] = await prisma.$transaction([
+    prisma.claimableItem.findMany({
+      where,
+      orderBy: {
+        [sortKey]: sortOrder,
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.claimableItem.count({ where }),
+  ]);
 
   return {
     data: claimableItems,
@@ -57,7 +78,10 @@ export const getClaimableItems = async (
   };
 };
 
-export const updateClaimableItem = async (id: string, data: any) => {
+export const updateClaimableItem = async (
+  id: string,
+  data: Partial<ClaimableItemData>
+) => {
   const { name, description, totalQuantity } = data;
 
   const updatedClaimableItem = await prisma.claimableItem.update({
@@ -92,7 +116,7 @@ export const recordClaimTransaction = async (
       throw new Error("No items left to claim");
     }
 
-    const updatedItem = await tx.claimableItem.update({
+    await tx.claimableItem.update({
       where: { id: itemId },
       data: {
         remainingQuantity: {

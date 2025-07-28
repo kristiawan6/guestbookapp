@@ -1,40 +1,60 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { apiResponse } from "@/lib/api-response";
 import prisma from "@/lib/prisma";
-import { jwtVerify } from "jose";
 import { hash } from "bcrypt";
 
-const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
-
 export async function POST(req: NextRequest) {
-  const { token, newPassword } = await req.json();
-
-  if (!token || !newPassword) {
-    return NextResponse.json(
-      { message: "Token and new password are required" },
-      { status: 400 }
-    );
-  }
-
   try {
-    const { payload } = await jwtVerify(token, secret);
-    const { userId } = payload;
+    const body = await req.json();
+    const { email, otp, password } = body;
 
-    if (!userId) {
-      throw new Error("Invalid token");
-    }
-
-    const hashedPassword = await hash(newPassword, 12);
-
-    await prisma.user.update({
-      where: { id: userId as string },
-      data: { password: hashedPassword },
+    const user = await prisma.user.findUnique({
+      where: { email },
     });
 
-    return NextResponse.json(
-      { message: "Password has been reset successfully" },
-      { status: 200 }
-    );
+    if (!user) {
+      return apiResponse("error", "User not found", null, [], null, 404);
+    }
+
+    if (!user.otpExpires || user.otp !== otp || user.otpExpires < new Date()) {
+      return apiResponse("error", "Invalid or expired OTP", null, [], null, 400);
+    }
+
+    if (password) {
+      const hashedPassword = await hash(password, 12);
+
+      await prisma.user.update({
+        where: { email },
+        data: {
+          password: hashedPassword,
+          otp: null,
+          otpExpires: null,
+        },
+      });
+
+      return apiResponse(
+        "success",
+        "Password reset successfully",
+        null,
+        null,
+        null,
+        200
+      );
+    } else {
+      // Only verify OTP
+      return apiResponse(
+        "success",
+        "OTP verified successfully",
+        null,
+        null,
+        null,
+        200
+      );
+    }
   } catch (err) {
-    return NextResponse.json({ message: "Invalid or expired token" }, { status: 400 });
+    if (err instanceof Error) {
+      return apiResponse("error", err.message, null, [], null, 400);
+    }
+    return apiResponse("error", "Internal Server Error", null, [], null, 500);
   }
 }

@@ -1,45 +1,47 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
+import { apiResponse } from "@/lib/api-response";
 import prisma from "@/lib/prisma";
-import { SignJWT } from "jose";
-
-const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
-const alg = "HS256";
+import { randomInt } from "crypto";
+import { sendEmail } from "@/lib/services/emailService";
 
 export async function POST(req: NextRequest) {
-  const { email } = await req.json();
+  try {
+    const body = await req.json();
+    const { email } = body;
 
-  if (!email) {
-    return NextResponse.json({ message: "Email is required" }, { status: 400 });
-  }
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
 
-  const user = await prisma.user.findFirst({
-    where: {
-      // Assuming the user model has an email field.
-      // If not, this needs to be adjusted.
-      // For now, I'll use username as a placeholder.
-      username: email,
-    },
-  });
+    if (!user) {
+      return apiResponse("error", "User not found", null, [], null, 404);
+    }
 
-  if (!user) {
-    // Don't reveal if the user exists or not
-    return NextResponse.json(
-      { message: "If a user with that email exists, a password reset link has been sent." },
-      { status: 200 }
+    const otp = randomInt(100000, 999999).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await prisma.user.update({
+      where: { email },
+      data: {
+        otp,
+        otpExpires,
+      },
+    });
+
+    await sendEmail(email, "Your OTP for password reset", otp);
+
+    return apiResponse(
+      "success",
+      "OTP sent successfully",
+      null,
+      null,
+      null,
+      200
     );
+  } catch (err) {
+    if (err instanceof Error) {
+      return apiResponse("error", err.message, null, [], null, 400);
+    }
+    return apiResponse("error", "Internal Server Error", null, [], null, 500);
   }
-
-  const token = await new SignJWT({ userId: user.id, email: user.username })
-    .setProtectedHeader({ alg })
-    .setExpirationTime("1h")
-    .setIssuedAt()
-    .sign(secret);
-
-  // In a real app, you would send an email with this link
-  console.log(`Password reset link: /auth/reset-password?token=${token}`);
-
-  return NextResponse.json(
-    { message: "If a user with that email exists, a password reset link has been sent." },
-    { status: 200 }
-  );
 }

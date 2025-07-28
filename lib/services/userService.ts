@@ -2,10 +2,20 @@ import prisma from "@/lib/prisma";
 import { hash } from "bcrypt";
 import { UserRole } from "@/app/generated/prisma";
 
-export const createUser = async (data: any) => {
-  const { username, password, role, eventIds } = data;
 
-  if (!username || !password || !role) {
+interface UserData {
+  username: string;
+  email: string;
+  password?: string;
+  role: UserRole;
+  isActive?: boolean;
+  eventId?: string;
+}
+
+export const createUser = async (data: UserData) => {
+  const { username, email, password, role, isActive, eventId } = data;
+
+  if (!username || !email || !password || !role) {
     throw new Error("Missing required fields");
   }
 
@@ -14,80 +24,98 @@ export const createUser = async (data: any) => {
   const user = await prisma.user.create({
     data: {
       username,
+      email,
       password: hashedPassword,
       role: role as UserRole,
+      isActive,
       events: {
-        create: eventIds?.map((eventId: string) => ({
-          event: {
-            connect: {
-              id: eventId,
-            },
-          },
-        })),
-      },
-    },
-    include: {
-      events: {
-        select: {
-          eventId: true,
-        },
+        create: eventId ? [{ event: { connect: { id: eventId } } }] : [],
       },
     },
   });
 
-  // Omit password from the returned object
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password: _, ...userWithoutPassword } = user;
   return userWithoutPassword;
 };
 
-export const getUsers = async () => {
-  const users = await prisma.user.findMany({
-    where: {
-      role: "AdminEvents",
-    },
-    select: {
-      id: true,
-      username: true,
-      role: true,
-      events: {
-        select: {
-          eventId: true,
+export const getUsers = async (
+  search?: string,
+  page: number = 1,
+  limit: number = 10,
+  sortKey: string = "username",
+  sortOrder: string = "asc"
+) => {
+  const where: {
+    OR?: {
+      [key: string]: { contains: string; mode: "insensitive" } | { equals: UserRole };
+    }[];
+  } = {};
+  if (search) {
+    where.OR = [
+      { username: { contains: search, mode: "insensitive" } },
+      { email: { contains: search, mode: "insensitive" } },
+      { role: { equals: search as UserRole } },
+    ];
+  }
+
+  const [users, total] = await prisma.$transaction([
+    prisma.user.findMany({
+      where,
+      orderBy: {
+        [sortKey]: sortOrder,
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        role: true,
+        isActive: true,
+        events: {
+          select: {
+            eventId: true,
+          },
         },
       },
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return {
+    data: users.map((u) => ({
+      ...u,
+      eventId: u.events.length > 0 ? u.events[0].eventId : "",
+    })),
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
     },
-  });
-  return users;
+  };
 };
 
-export const updateUser = async (id: string, data: any) => {
-  const { username, role, eventIds } = data;
+export const updateUser = async (id: string, data: Partial<UserData>) => {
+  const { username, email, role, isActive, eventId } = data;
 
   const updatedUser = await prisma.user.update({
     where: { id },
     data: {
       username,
+      email,
       role: role as UserRole,
+      isActive,
       events: {
         deleteMany: {},
-        create: eventIds?.map((eventId: string) => ({
-          event: {
-            connect: {
-              id: eventId,
-            },
-          },
-        })),
-      },
-    },
-    include: {
-      events: {
-        select: {
-          eventId: true,
-        },
+        create: eventId ? [{ event: { connect: { id: eventId } } }] : [],
       },
     },
   });
 
-  const { password, ...userWithoutPassword } = updatedUser;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { password: __, ...userWithoutPassword } = updatedUser;
   return userWithoutPassword;
 };
 

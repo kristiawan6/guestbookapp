@@ -1,15 +1,51 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createGuest, getGuests } from "@/lib/services/guestService";
 import { jwtVerify } from "jose";
 import { apiResponse } from "@/lib/api-response";
+import { guestSchema } from "@/lib/validations";
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET || "your-secret-key"
-);
+const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
+/**
+ * @swagger
+ * /api/events/{eventId}/guests:
+ *   get:
+ *     summary: Get all guests for an event
+ *     parameters:
+ *       - in: path
+ *         name: eventId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: sortKey
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: sortOrder
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Guests retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -22,11 +58,15 @@ export async function GET(
     const search = req.nextUrl.searchParams.get("search");
     const page = req.nextUrl.searchParams.get("page");
     const limit = req.nextUrl.searchParams.get("limit");
+    const sortKey = req.nextUrl.searchParams.get("sortKey");
+    const sortOrder = req.nextUrl.searchParams.get("sortOrder");
     const guests = await getGuests(
-      params.eventId,
+      (await params).eventId,
       search || undefined,
       page ? Number(page) : 1,
-      limit ? Number(limit) : 10
+      limit ? Number(limit) : 10,
+      sortKey || undefined,
+      sortOrder || undefined
     );
     return apiResponse(
       "success",
@@ -36,14 +76,39 @@ export async function GET(
       guests.meta,
       200
     );
-  } catch (err) {
+  } catch {
     return apiResponse("error", "Unauthorized", null, [], null, 401);
   }
 }
 
+/**
+ * @swagger
+ * /api/events/{eventId}/guests:
+ *   post:
+ *     summary: Create a new guest for an event
+ *     parameters:
+ *       - in: path
+ *         name: eventId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Guest'
+ *     responses:
+ *       201:
+ *         description: Guest created successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -54,7 +119,12 @@ export async function POST(
   try {
     await jwtVerify(token, secret);
     const body = await req.json();
-    const guest = await createGuest(params.eventId, body);
+    const validation = guestSchema.safeParse(body);
+    if (!validation.success) {
+      return apiResponse("error", "Invalid input", null, validation.error.errors, null, 400);
+    }
+    const { eventId } = await params;
+    const guest = await createGuest(eventId, validation.data);
     return apiResponse(
       "success",
       "Guest created successfully",

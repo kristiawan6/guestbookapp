@@ -8,21 +8,29 @@ const fetchUser = async () => {
   if (!res.ok) {
     throw new Error("Network response was not ok");
   }
-  return res.json();
+  const data = await res.json();
+  return data.data;
 };
 
 export const usePrefetchUser = () => {
   const queryClient = useQueryClient();
 
+  const hasToken =
+    typeof window !== "undefined" &&
+    document.cookie.split("; ").some((row) => row.startsWith("token="));
+
   useEffect(() => {
-    queryClient.prefetchQuery({
-      queryKey: ["user"],
-      queryFn: fetchUser,
-    });
-  }, [queryClient]);
+    if (hasToken) {
+      queryClient.prefetchQuery({
+        queryKey: ["user"],
+        queryFn: fetchUser,
+      });
+    }
+  }, [queryClient, hasToken]);
 
   return useQuery({
     queryKey: ["user"],
     queryFn: fetchUser,
+    enabled: hasToken,
   });
 };

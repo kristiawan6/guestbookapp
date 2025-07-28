@@ -4,10 +4,9 @@ import prisma from "@/lib/prisma";
 import { compare } from "bcrypt";
 import { SignJWT } from "jose";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 
 export async function login(
-  prevState: { error?: string } | null,
+  prevState: { error?: string; success?: boolean; role?: string } | null,
   formData: FormData
 ) {
   const username = formData.get("username") as string;
@@ -45,16 +44,13 @@ export async function login(
     .setIssuedAt()
     .sign(secret);
 
-  (await cookies()).set("token", jwt, {
+  const cookieStore = await cookies();
+  cookieStore.set("token", jwt, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
     path: "/",
   });
 
-  if (user.role === "SuperAdmin") {
-    redirect("/admin/dashboard");
-  } else {
-    redirect("/dashboard");
-  }
+  return { success: true, role: user.role };
 }

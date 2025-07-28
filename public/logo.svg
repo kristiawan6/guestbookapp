@@ -1,0 +1,5 @@
+<svg width="150" height="40" viewBox="0 0 150 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M20 30L0 10H10L20 20L30 10H40L20 30Z" fill="#333333"/>
+  <path d="M20 10L30 20L40 10" stroke="#D9534F" stroke-width="4"/>
+  <text x="50" y="25" font-family="Arial, sans-serif" font-size="20" fill="#333333">MIGUNESIA</text>
+</svg>

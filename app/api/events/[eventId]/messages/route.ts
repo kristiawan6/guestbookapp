@@ -1,20 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { createMessage, getMessages } from "@/lib/services/messageService";
 import { apiResponse } from "@/lib/api-response";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   try {
     const search = req.nextUrl.searchParams.get("search");
     const page = req.nextUrl.searchParams.get("page");
     const limit = req.nextUrl.searchParams.get("limit");
+    const sortKey = req.nextUrl.searchParams.get("sortKey");
+    const sortOrder = req.nextUrl.searchParams.get("sortOrder");
     const messages = await getMessages(
-      params.eventId,
+      (await params).eventId,
       search || undefined,
       page ? Number(page) : 1,
-      limit ? Number(limit) : 10
+      limit ? Number(limit) : 10,
+      sortKey || undefined,
+      sortOrder || undefined
     );
     return apiResponse(
       "success",
@@ -34,11 +38,12 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
   try {
     const body = await req.json();
-    const message = await createMessage(params.eventId, body);
+    const { eventId } = await params;
+    const message = await createMessage(eventId, body);
     return apiResponse(
       "success",
       "Message created successfully",

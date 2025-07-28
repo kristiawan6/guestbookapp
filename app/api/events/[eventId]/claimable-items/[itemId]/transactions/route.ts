@@ -9,7 +9,7 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-k
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { itemId: string } }
+  { params }: { params: Promise<{ itemId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -19,16 +19,17 @@ export async function GET(
 
   try {
     await jwtVerify(token, secret);
-    const transactions = await getClaimTransactions(params.itemId);
+    const { itemId } = await params;
+    const transactions = await getClaimTransactions(itemId);
     return NextResponse.json(transactions);
-  } catch (err) {
+  } catch {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 }
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { itemId: string } }
+  { params }: { params: Promise<{ itemId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -40,7 +41,7 @@ export async function POST(
     const { payload } = await jwtVerify(token, secret);
     const body = await req.json();
     const transaction = await recordClaimTransaction(
-      params.itemId,
+      (await params).itemId,
       body.guestId,
       payload.userId as string
     );

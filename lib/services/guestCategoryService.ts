@@ -1,6 +1,16 @@
 import prisma from "@/lib/prisma";
 
-export const createGuestCategory = async (eventId: string, data: any) => {
+interface GuestCategoryData {
+  name: string;
+  description?: string;
+  quota?: number;
+  isActive?: boolean;
+}
+
+export const createGuestCategory = async (
+  eventId: string,
+  data: GuestCategoryData
+) => {
   const { name, description, quota, isActive } = data;
 
   if (!name) {
@@ -58,9 +68,18 @@ export const getGuestCategories = async (
   eventId: string,
   search?: string,
   page: number = 1,
-  limit: number = 10
+  limit: number = 10,
+  sortKey: string = "name",
+  sortOrder: string = "asc"
 ) => {
-  const where: any = { eventId };
+  const where: {
+    eventId: string;
+    OR?: (
+      | { name: { contains: string; mode: "insensitive" } }
+      | { code: { contains: string; mode: "insensitive" } }
+      | { description: { contains: string; mode: "insensitive" } }
+    )[];
+  } = { eventId };
   if (search) {
     where.OR = [
       { name: { contains: search, mode: "insensitive" } },
@@ -69,13 +88,17 @@ export const getGuestCategories = async (
     ];
   }
 
-  const guestCategories = await prisma.guestCategory.findMany({
-    where,
-    skip: (page - 1) * limit,
-    take: limit,
-  });
-
-  const total = await prisma.guestCategory.count({ where });
+  const [guestCategories, total] = await prisma.$transaction([
+    prisma.guestCategory.findMany({
+      where,
+      orderBy: {
+        [sortKey]: sortOrder,
+      },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.guestCategory.count({ where }),
+  ]);
 
   return {
     data: guestCategories,
@@ -100,7 +123,10 @@ export const getGuestCategoryById = async (id: string) => {
   return guestCategory;
 };
 
-export const updateGuestCategory = async (id: string, data: any) => {
+export const updateGuestCategory = async (
+  id: string,
+  data: Partial<GuestCategoryData>
+) => {
   const { name, description, quota, isActive } = data;
 
   if (name) {

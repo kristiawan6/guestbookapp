@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStatistics } from "@/hooks/use-statistics";
 import { BarChart } from "lucide-react";

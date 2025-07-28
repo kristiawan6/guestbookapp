@@ -1,7 +1,13 @@
 "use client";
 
-import { ArrowUpDown, Pencil, Plus, Trash2, Upload } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  ArrowUpDown,
+  Pencil,
+  Plus,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -31,28 +37,37 @@ type Event = {
   isActive: boolean;
 };
 
+type Meta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
 export default function EventManagementPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [meta, setMeta] = useState<any>(null);
+  const [meta, setMeta] = useState<Meta | null>(null);
   const [sortKey, setSortKey] = useState<keyof Event>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const fetchEvents = () => {
-    fetch(`/api/events?search=${search}&page=${page}`)
+  const fetchEvents = useCallback(() => {
+    fetch(
+      `/api/events?search=${search}&page=${page}&sortKey=${sortKey}&sortOrder=${sortOrder}`
+    )
       .then((res) => res.json())
       .then((data) => {
         setEvents(data.data);
         setMeta(data.meta);
       });
-  };
+  }, [page, search, sortKey, sortOrder]);
 
   useEffect(() => {
     fetchEvents();
-  }, [search, page, sortKey, sortOrder]);
+  }, [fetchEvents]);
 
   const handleAddEvent = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -113,16 +128,6 @@ export default function EventManagementPage() {
     document.body.removeChild(link);
   };
 
-  const sortedEvents = [...events].sort((a, b) => {
-    if (a[sortKey] < b[sortKey]) {
-      return sortOrder === "asc" ? -1 : 1;
-    }
-    if (a[sortKey] > b[sortKey]) {
-      return sortOrder === "asc" ? 1 : -1;
-    }
-    return 0;
-  });
-
   const handleSort = (key: keyof Event) => {
     if (sortKey === key) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -145,17 +150,25 @@ export default function EventManagementPage() {
           />
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="mr-2">
+              <Button
+                className="mr-2"
+                onClick={() => {
+                  setSelectedEvent(null);
+                }}
+              >
                 <Plus className="mr-2 h-4 w-4" /> Add
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>
                   {selectedEvent ? "Edit" : "Add"} Event
                 </DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleAddEvent}>
+              <form
+                key={selectedEvent ? "edit-event-form" : "add-event-form"}
+                onSubmit={handleAddEvent}
+              >
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="name" className="text-right">
@@ -204,19 +217,45 @@ export default function EventManagementPage() {
           <TableHeader>
             <TableRow>
               <TableHead>No.</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Is Active</TableHead>
+              <TableHead>
+                <Button variant="ghost" onClick={() => handleSort("name")}>
+                  Name
+                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSort("description")}
+                >
+                  Description
+                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button variant="ghost" onClick={() => handleSort("isActive")}>
+                  Is Active
+                  <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+              </TableHead>
               <TableHead className="text-center">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedEvents.map((event, index) => (
+            {events.map((event, index) => (
               <TableRow key={event.id}>
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{event.name}</TableCell>
                 <TableCell>{event.description}</TableCell>
-                <TableCell>{event.isActive ? "Y" : "N"}</TableCell>
+                <TableCell>
+                  <span
+                    className={`px-2 py-1 rounded-full text-white ${
+                      event.isActive ? "bg-green-500" : "bg-red-500"
+                    }`}
+                  >
+                    {event.isActive ? "Active" : "Inactive"}
+                  </span>
+                </TableCell>
                 <TableCell>
                   <Button
                     variant="outline"

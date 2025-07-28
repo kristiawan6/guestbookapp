@@ -6,9 +6,8 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-k
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { eventId: string } }
+  { params }: { params: Promise<{ eventId: string }> }
 ) {
-  await req.json().catch(() => ({})); // Await the request body to be parsed
   const token = req.cookies.get("token")?.value;
 
   if (!token) {
@@ -17,7 +16,8 @@ export async function GET(
 
   try {
     await jwtVerify(token, secret);
-    const buffer = await exportGuests(params.eventId);
+    const { eventId } = await params;
+    const buffer = await exportGuests(eventId);
     const headers = new Headers();
     headers.append(
       "Content-Disposition",
@@ -28,7 +28,7 @@ export async function GET(
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
     return new Response(buffer, { headers });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 }

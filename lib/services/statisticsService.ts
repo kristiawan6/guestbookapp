@@ -13,13 +13,6 @@ export const getGuestStatistics = async (eventId: string) => {
       },
     },
   });
-  const deletedGuests = await prisma.guest.count({
-    where: {
-      id: {
-        in: [],
-      },
-    },
-  });
 
   const totalMessages = await prisma.message.count({
     where: { eventId },
@@ -46,7 +39,6 @@ export const getGuestStatistics = async (eventId: string) => {
     totalGuests,
     totalEvents,
     totalGuestsLastEvent,
-    deletedGuests,
     totalMessages,
     newMessages,
     claimedSouvenirs,

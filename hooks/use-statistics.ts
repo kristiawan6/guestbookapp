@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useEventContext } from "./use-event-context";
 
 const fetchUser = async () => {
   const res = await fetch("/api/user");
@@ -21,41 +21,23 @@ const fetchStatistics = async (eventId: string) => {
   return data;
 };
 
-const fetchEvents = async () => {
-  const res = await fetch("/api/events");
-  if (!res.ok) {
-    throw new Error("Network response was not ok");
-  }
-  const { data } = await res.json();
-  return data;
-};
-
 export const useStatistics = () => {
-  const [selectedEventId, setSelectedEventId] = React.useState<string | null>(
-    null
-  );
+  const {
+    events,
+    selectedEventId,
+    setSelectedEventId,
+    isLoading: isEventsLoading,
+  } = useEventContext();
 
-  const { data: user, isLoading: isUserLoading } = useQuery({
+  const { data: user, isLoading: isUserLoading, error: userError } = useQuery({
     queryKey: ["user"],
     queryFn: fetchUser,
   });
 
-  const { data: events, isLoading: isEventsLoading } = useQuery({
-    queryKey: ["events"],
-    queryFn: fetchEvents,
-    enabled: !!user,
-  });
-
-  React.useEffect(() => {
-    if (!selectedEventId && events?.length > 0) {
-      setSelectedEventId(events[0].id);
-    }
-  }, [events, selectedEventId]);
-
   const {
     data: statistics,
     isLoading: isStatisticsLoading,
-    error,
+    error: statisticsError,
   } = useQuery({
     queryKey: ["statistics", selectedEventId],
     queryFn: () => fetchStatistics(selectedEventId!),
@@ -74,6 +56,6 @@ export const useStatistics = () => {
       deletedGuests: 51,
     },
     isLoading: isUserLoading || isStatisticsLoading || isEventsLoading,
-    error,
+    error: userError || statisticsError,
   };
 };

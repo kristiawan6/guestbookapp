@@ -1,18 +1,47 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import {
   deleteGuest,
   updateGuest,
 } from "@/lib/services/guestService";
 import { jwtVerify } from "jose";
 import { apiResponse } from "@/lib/api-response";
+import { guestSchema } from "@/lib/validations";
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET || "your-secret-key"
-);
+const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
+/**
+ * @swagger
+ * /api/events/{eventId}/guests/{guestId}:
+ *   put:
+ *     summary: Update a guest
+ *     parameters:
+ *       - in: path
+ *         name: eventId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: guestId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Guest'
+ *     responses:
+ *       200:
+ *         description: Guest updated successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { guestId: string } }
+  { params }: { params: Promise<{ guestId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -23,7 +52,12 @@ export async function PUT(
   try {
     await jwtVerify(token, secret);
     const body = await req.json();
-    const guest = await updateGuest(params.guestId, body);
+    const validation = guestSchema.safeParse(body);
+    if (!validation.success) {
+      return apiResponse("error", "Invalid input", null, validation.error.errors, null, 400);
+    }
+    const { guestId } = await params;
+    const guest = await updateGuest(guestId, validation.data);
     return apiResponse(
       "success",
       "Guest updated successfully",
@@ -40,9 +74,33 @@ export async function PUT(
   }
 }
 
+/**
+ * @swagger
+ * /api/events/{eventId}/guests/{guestId}:
+ *   delete:
+ *     summary: Delete a guest
+ *     parameters:
+ *       - in: path
+ *         name: eventId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: path
+ *         name: guestId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Guest deleted successfully
+ *       400:
+ *         description: Invalid input
+ *       401:
+ *         description: Unauthorized
+ */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { guestId: string } }
+  { params }: { params: Promise<{ guestId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -52,7 +110,8 @@ export async function DELETE(
 
   try {
     await jwtVerify(token, secret);
-    await deleteGuest(params.guestId);
+    const { guestId } = await params;
+    await deleteGuest(guestId);
     return apiResponse(
       "success",
       "Guest deleted successfully",

@@ -14,12 +14,16 @@ export async function middleware(req: NextRequest) {
     const { payload } = await jwtVerify(token, secret);
     const { pathname } = req.nextUrl;
 
-    if (pathname.startsWith("/admin") && payload.role !== "SuperAdmin") {
+    const adminRoles = ["SuperAdmin", "AdminEvents"];
+    if (
+      pathname.startsWith("/admin") &&
+      !adminRoles.includes(payload.role as string)
+    ) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
     return NextResponse.next();
-  } catch (err) {
+  } catch {
     return NextResponse.redirect(new URL("/auth/login", req.url));
   }
 }

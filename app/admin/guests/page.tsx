@@ -4,7 +4,6 @@ import {
   ArrowUpDown,
   ChevronDown,
   Copy,
-  Download,
   Mail,
   MessageSquare,
   Pencil,
@@ -16,7 +15,7 @@ import {
   Upload,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { ImportDialog } from "@/components/ui/import-dialog";
 import {
@@ -53,7 +52,6 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStatistics } from "@/hooks/use-statistics";
-import Papa from "papaparse";
 import Swal from "sweetalert2";
 import { Textarea } from "@/components/ui/textarea";
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
@@ -82,6 +80,13 @@ type GuestCategory = {
   name: string;
 };
 
+type Meta = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
 export default function GuestPage() {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [guestCategories, setGuestCategories] = useState<GuestCategory[]>([]);
@@ -91,20 +96,22 @@ export default function GuestPage() {
   const { selectedEventId, isLoading } = useStatistics();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [meta, setMeta] = useState<any>(null);
+  const [meta, setMeta] = useState<Meta | null>(null);
   const [sortKey, setSortKey] = useState<keyof Guest>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  const fetchGuests = () => {
+  const fetchGuests = useCallback(() => {
     if (selectedEventId) {
-      fetch(`/api/events/${selectedEventId}/guests?search=${search}&page=${page}`)
+      fetch(
+        `/api/events/${selectedEventId}/guests?search=${search}&page=${page}&sortKey=${sortKey}&sortOrder=${sortOrder}`
+      )
         .then((res) => res.json())
         .then((data) => {
           setGuests(data.data);
           setMeta(data.meta);
         });
     }
-  };
+  }, [page, search, selectedEventId, sortKey, sortOrder]);
 
   useEffect(() => {
     if (selectedEventId) {
@@ -112,8 +119,11 @@ export default function GuestPage() {
         .then((res) => res.json())
         .then((data) => setGuestCategories(data.data));
     }
+  }, [selectedEventId]);
+
+  useEffect(() => {
     fetchGuests();
-  }, [selectedEventId, search, page, sortKey, sortOrder]);
+  }, [fetchGuests]);
 
   const handleAddGuest = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -216,11 +226,12 @@ export default function GuestPage() {
           showConfirmButton: false,
           timer: 1500,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "An unexpected error occurred";
         Swal.fire({
           icon: "error",
           title: "Import Failed",
-          text: error.message,
+          text: message,
         });
       }
     }
@@ -234,15 +245,6 @@ export default function GuestPage() {
     XLSX.writeFile(workbook, "Template_Excel.xlsx");
   };
 
-  const sortedGuests = [...guests].sort((a, b) => {
-    if (a[sortKey] < b[sortKey]) {
-      return sortOrder === "asc" ? -1 : 1;
-    }
-    if (a[sortKey] > b[sortKey]) {
-      return sortOrder === "asc" ? 1 : -1;
-    }
-    return 0;
-  });
 
   const handleSort = (key: keyof Guest) => {
     if (sortKey === key) {
@@ -363,8 +365,16 @@ export default function GuestPage() {
               className="mr-2"
               disabled={isLoading}
               onClick={() => {
-                setSelectedGuest(null);
-                setIsDialogOpen(true);
+                if (guestCategories.length === 0) {
+                  Swal.fire({
+                    icon: "error",
+                    title: "No Guest Category",
+                    text: "Please create a guest category first before adding a guest.",
+                  });
+                } else {
+                  setSelectedGuest(null);
+                  setIsDialogOpen(true);
+                }
               }}
             >
               <Plus className="mr-2 h-4 w-4" /> Add
@@ -569,7 +579,7 @@ export default function GuestPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedGuests.map((guest, index) => (
+              {guests.map((guest) => (
                 <TableRow key={guest.id}>
                   <TableCell className="p-4 text-center">
                     <Checkbox
