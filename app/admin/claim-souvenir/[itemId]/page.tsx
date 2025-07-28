@@ -115,6 +115,7 @@ export default function ClaimDetail({
           timer: 1500,
         });
 
+        setIsScannerOpen(false);
         await fetchAllData();
       } catch (error: unknown) {
         const message =
