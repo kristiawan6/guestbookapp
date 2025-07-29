@@ -12,7 +12,7 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-k
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ itemId: string }> }
+  { params }: { params: Promise<{ eventId: string; itemId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -22,8 +22,8 @@ export async function GET(
 
   try {
     await jwtVerify(token, secret);
-    const { itemId } = await params;
-    const item = await getClaimableItem(itemId);
+    const { eventId, itemId } = await params;
+    const item = await getClaimableItem(itemId, eventId);
     return apiResponse(
       "success",
       "Claimable item retrieved successfully",
@@ -42,7 +42,7 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ itemId: string }> }
+  { params }: { params: Promise<{ eventId: string; itemId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -77,7 +77,7 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ itemId: string }> }
+  { params }: { params: Promise<{ eventId: string; itemId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 

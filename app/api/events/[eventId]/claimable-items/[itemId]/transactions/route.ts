@@ -53,14 +53,18 @@ export async function POST(
     const adminId = decoded.payload.userId as string;
     const { itemId } = await params;
     const { guestId } = await req.json();
-    const transaction = await recordClaimTransaction(itemId, guestId, adminId);
+    const result = await recordClaimTransaction(itemId, guestId, adminId);
+    
+    // Handle both new claims and existing claims
+    const statusCode = result.isExisting ? 200 : 201;
+    
     return apiResponse(
       "success",
-      "Transaction recorded successfully",
-      transaction,
+      result.message,
+      result,
       null,
       null,
-      201
+      statusCode
     );
   } catch (err) {
     if (err instanceof Error) {

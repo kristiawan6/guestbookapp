@@ -35,7 +35,7 @@ type User = {
   email: string;
   role: string;
   isActive: boolean;
-  eventId: string;
+  eventIds: string[];
 };
 
 type Event = {
@@ -90,6 +90,9 @@ export default function UserManagementPage() {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const data = Object.fromEntries(formData.entries());
+    
+    // Collect all checked eventIds
+    const eventIds = formData.getAll('eventIds') as string[];
 
     const url = selectedUser
       ? `/api/users/${selectedUser.id}`
@@ -105,6 +108,7 @@ export default function UserManagementPage() {
         },
         body: JSON.stringify({
           ...data,
+          eventIds,
           isActive: data.isActive === "on",
         }),
       });
@@ -263,21 +267,24 @@ export default function UserManagementPage() {
                     </select>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="eventId" className="text-right">
-                      Event
+                    <Label className="text-right">
+                      Events
                     </Label>
-                    <select
-                      id="eventId"
-                      name="eventId"
-                      defaultValue={selectedUser?.eventId}
-                      className="col-span-3 border rounded-md"
-                    >
+                    <div className="col-span-3 space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
                       {events.map((event) => (
-                        <option key={event.id} value={event.id}>
-                          {event.name}
-                        </option>
+                        <div key={event.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`event-${event.id}`}
+                            name="eventIds"
+                            value={event.id}
+                            defaultChecked={selectedUser?.eventIds?.includes(event.id)}
+                          />
+                          <Label htmlFor={`event-${event.id}`} className="text-sm">
+                            {event.name}
+                          </Label>
+                        </div>
                       ))}
-                    </select>
+                    </div>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="isActive" className="text-right">
@@ -325,6 +332,7 @@ export default function UserManagementPage() {
                   <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
               </TableHead>
+              <TableHead>Events</TableHead>
               <TableHead className="text-center">Action</TableHead>
             </TableRow>
           </TableHeader>
@@ -343,6 +351,18 @@ export default function UserManagementPage() {
                   >
                     {user.isActive ? "Active" : "Inactive"}
                   </span>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {user.eventIds?.map((eventId) => {
+                      const event = events.find(e => e.id === eventId);
+                      return event ? (
+                        <span key={eventId} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                          {event.name}
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <Button

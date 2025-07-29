@@ -31,7 +31,7 @@ type Guest = {
 
 type Transaction = {
   guestId: string;
-  createdAt: string;
+  timestamp: string;
 };
 
 export default function ClaimDetail({
@@ -44,8 +44,8 @@ export default function ClaimDetail({
   const [guests, setGuests] = useState<Guest[]>([]);
   const [totalClaimed, setTotalClaimed] = useState(0);
   const [totalQuota, setTotalQuota] = useState(0);
+  const [remainingQuantity, setRemainingQuantity] = useState(0);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [scannedGuestId, setScannedGuestId] = useState<string | null>(null);
 
   const fetchAllData = useCallback(async () => {
     if (selectedEventId) {
@@ -62,7 +62,7 @@ export default function ClaimDetail({
       const transactionsData = await transactionsRes.json();
 
       const transactionsMap = new Map<string, string>(
-        transactionsData.data.map((t: Transaction) => [t.guestId, t.createdAt])
+        transactionsData.data.map((t: Transaction) => [t.guestId, t.timestamp])
       );
 
       const mergedGuests = guestsData.data.map((g: any) => ({
@@ -73,6 +73,7 @@ export default function ClaimDetail({
       setGuests(mergedGuests);
       setTotalClaimed(transactionsData.data.length);
       setTotalQuota(itemData.data?.totalQuantity || 0);
+      setRemainingQuantity(itemData.data?.remainingQuantity || 0);
     }
   }, [selectedEventId, itemId]);
 
@@ -80,56 +81,83 @@ export default function ClaimDetail({
     fetchAllData();
   }, [fetchAllData]);
 
-  const handleScan = async (data: string | null) => {
-    if (data) {
-      let guestId = data;
-      try {
-        const url = new URL(data);
-        guestId = url.searchParams.get("c") || data;
-      } catch (e) {
-        // Not a valid URL, assume it's a raw ID
-      }
-      setScannedGuestId(guestId);
-
-      try {
-        const response = await fetch(
-          `/api/events/${selectedEventId}/claimable-items/${itemId}/transactions`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ guestId }),
-          }
-        );
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Something went wrong");
+  const handleScan = useCallback(
+    async (data: string) => {
+      if (data) {
+        let guestId = data;
+        try {
+          const url = new URL(data);
+          guestId = url.searchParams.get("c") || data;
+        } catch (e) {
+          // Not a valid URL, assume it's a raw ID
         }
 
-        Swal.fire({
-          icon: "success",
-          title: "Claim recorded successfully",
-          showConfirmButton: false,
-          timer: 1500,
-        });
+        try {
+          const response = await fetch(
+            `/api/events/${selectedEventId}/claimable-items/${itemId}/transactions`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ guestId }),
+            }
+          );
 
-        setIsScannerOpen(false);
-        await fetchAllData();
-      } catch (error: unknown) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "An unexpected error occurred";
-        Swal.fire({
-          icon: "error",
-          title: "Operation Failed",
-          text: message,
-        });
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Something went wrong");
+          }
+
+          const responseData = await response.json();
+          const result = responseData.data;
+
+          if (result.isExisting) {
+            // Guest has already claimed this item
+            Swal.fire({
+              icon: "info",
+              title: "Already Claimed",
+              text: `${result.guest.name} has already claimed this item on ${new Date(result.timestamp).toLocaleString()}`,
+              confirmButtonText: "OK",
+            });
+          } else {
+            // New claim recorded successfully
+            Swal.fire({
+              icon: "success",
+              title: "Claim Recorded Successfully",
+              text: `${result.guest.name} has claimed the item`,
+              showConfirmButton: false,
+              timer: 2000,
+            });
+          }
+
+          setIsScannerOpen(false);
+          await fetchAllData();
+        } catch (error: unknown) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "An unexpected error occurred";
+          Swal.fire({
+            icon: "error",
+            title: "Operation Failed",
+            text: message,
+          });
+        }
       }
-    }
-  };
+    },
+    [fetchAllData, itemId, selectedEventId]
+  );
+
+  const handleScannerError = useCallback((error: Error) => {
+    console.error("Scanner Error:", error);
+    Swal.fire({
+      icon: "error",
+      title: "Scanner Error",
+      text: error.message || "Could not access the camera.",
+    });
+    setIsScannerOpen(false);
+  }, []);
 
   return (
     <div className="p-6">
@@ -148,10 +176,14 @@ export default function ClaimDetail({
           </Link>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-3 gap-6 mb-6">
         <div className="bg-white p-4 rounded-lg shadow">
           <h2 className="text-lg font-semibold">Total CLAIM</h2>
           <p className="text-2xl font-bold">{totalClaimed}</p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h2 className="text-lg font-semibold">Remaining</h2>
+          <p className="text-2xl font-bold text-red-500">{remainingQuantity}</p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
           <h2 className="text-lg font-semibold">Total Quota</h2>
@@ -170,7 +202,7 @@ export default function ClaimDetail({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {guests.map((guest, index) => (
+            {guests.map((guest) => (
               <TableRow key={guest.id}>
                 <TableCell>
                   <Trash2 className="h-4 w-4 text-red-500" />
@@ -189,22 +221,16 @@ export default function ClaimDetail({
         </Table>
       </div>
       <Dialog open={isScannerOpen} onOpenChange={setIsScannerOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Scan Guest Barcode</DialogTitle>
           </DialogHeader>
-          <BarcodeScanner
-            onScan={handleScan}
-            onError={(error) => {
-              console.error("Scanner Error:", error);
-              Swal.fire({
-                icon: "error",
-                title: "Scanner Error",
-                text: error.message || "Could not access the camera.",
-              });
-              setIsScannerOpen(false);
-            }}
-          />
+          {isScannerOpen && (
+            <BarcodeScanner
+              onScan={handleScan}
+              onError={handleScannerError}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -18,9 +18,11 @@ interface BroadcastTemplateData {
   type: string;
   content: string;
   subject?: string;
+  footer?: string;
   footerMessage?: string;
   button?: string;
   imageAttachment?: string;
+  imageAttachmentType?: string;
 }
 
 export const createBroadcastTemplate = async (
@@ -32,9 +34,11 @@ export const createBroadcastTemplate = async (
     type,
     content,
     subject,
+    footer,
     footerMessage,
     button,
     imageAttachment,
+    imageAttachmentType,
   } = data;
 
   if (!name || !type || !content) {
@@ -52,9 +56,10 @@ export const createBroadcastTemplate = async (
       type: parsedType,
       content,
       subject,
-      footerMessage,
+      footerMessage: footer || footerMessage,
       button,
       imageAttachment,
+      imageAttachmentType,
       event: {
         connect: {
           id: eventId,
@@ -135,9 +140,11 @@ export const updateBroadcastTemplate = async (
     type,
     content,
     subject,
+    footer,
     footerMessage,
     button,
     imageAttachment,
+    imageAttachmentType,
   } = data;
 
   const dataToUpdate: {
@@ -147,14 +154,16 @@ export const updateBroadcastTemplate = async (
     footerMessage?: string;
     button?: string;
     imageAttachment?: string;
+    imageAttachmentType?: string;
     type?: BroadcastType;
   } = {
     name,
     content,
     subject,
-    footerMessage,
+    footerMessage: footer || footerMessage,
     button,
     imageAttachment,
+    imageAttachmentType,
   };
 
   if (type) {

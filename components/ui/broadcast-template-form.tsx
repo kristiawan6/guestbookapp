@@ -9,6 +9,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useStatistics } from "@/hooks/use-statistics";
 import { useRouter } from "next/navigation";
 import SunEditor from "@/components/ui/sun-editor";
+import Swal from "sweetalert2";
+
 
 const GUEST_FIELDS = [
   "Fullname",
@@ -29,12 +31,15 @@ interface Template {
   content: string;
   footer: string;
   imageAttachment: string;
+  imageAttachmentType?: string;
 }
 
 export default function BroadcastTemplateForm({
   template,
+  templateType = "whatsapp",
 }: {
   template?: Template;
+  templateType?: string;
 }) {
   const { selectedEventId } = useStatistics();
   const [content, setContent] = useState(
@@ -45,8 +50,24 @@ Mengirimkan QR code undangan sebagai peserta`
   );
   const router = useRouter();
   const [buttonWhatsapp, setButtonWhatsapp] = useState(false);
-  const [imageAttachment, setImageAttachment] = useState(
-    template?.imageAttachment || "customize"
+  const [imageAttachment, setImageAttachment] = useState(() => {
+    if (template?.imageAttachmentType) {
+      // Use the stored imageAttachmentType if available
+      return template.imageAttachmentType;
+    }
+    if (template?.imageAttachment) {
+      // Fallback: Check if it's one of the predefined options
+      if (["no-image", "qr-code-card", "customize"].includes(template.imageAttachment)) {
+        return template.imageAttachment;
+      }
+      // If it's a URL, default to customize
+      return "customize";
+    }
+    // Default to "qr-code" for new templates
+    return "qr-code";
+  });
+  const [uploadedImageUrl, setUploadedImageUrl] = useState(
+    template?.imageAttachment || ""
   );
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -57,12 +78,17 @@ Mengirimkan QR code undangan sebagai peserta`
     }
     const formData = new FormData(event.currentTarget);
     const file = formData.get("image") as File;
-    let imageUrl = imageAttachment;
+    let imageUrl = uploadedImageUrl; // Use existing image URL as default
 
     if (file && file.size > 0) {
       const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
       if (!allowedTypes.includes(file.type)) {
-        alert("Invalid file type. Only JPG, JPEG, and PNG are allowed.");
+        await Swal.fire({
+          icon: 'error',
+          title: 'Invalid File Type',
+          text: 'Only JPG, JPEG, and PNG files are allowed.',
+          confirmButtonColor: '#3085d6'
+        });
         return;
       }
 
@@ -76,12 +102,23 @@ Mengirimkan QR code undangan sebagai peserta`
         const result = await response.json();
         if (result.success) {
           imageUrl = result.path;
+          setUploadedImageUrl(result.path);
         } else {
-          alert(`Image upload failed: ${result.error}`);
+          await Swal.fire({
+            icon: 'error',
+            title: 'Upload Failed',
+            text: `Image upload failed: ${result.error}`,
+            confirmButtonColor: '#3085d6'
+          });
           return;
         }
       } catch {
-        alert("An error occurred while uploading the image.");
+        await Swal.fire({
+          icon: 'error',
+          title: 'Upload Error',
+          text: 'An error occurred while uploading the image.',
+          confirmButtonColor: '#3085d6'
+        });
         return;
       }
     }
@@ -93,22 +130,53 @@ Mengirimkan QR code undangan sebagai peserta`
       : `/api/events/${selectedEventId}/broadcast-templates`;
     const method = template ? "PUT" : "POST";
 
-    await fetch(url, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        ...data,
-        type: "WhatsApp",
-        content,
-        footer: data.footer,
-        button: buttonWhatsapp ? data.button : undefined,
-        imageAttachment: imageUrl,
-      }),
-    });
+    try {
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...data,
+          type: templateType === "email" ? "Email" : "WhatsApp",
+          content,
+          footer: data.footer,
+          button: buttonWhatsapp ? data.button : undefined,
+          imageAttachment: imageAttachment === "no-image" ? "no-image" : imageUrl,
+          imageAttachmentType: imageAttachment,
+        }),
+      });
 
-    router.push("/admin/broadcast");
+      const result = await response.json();
+      
+      if (response.ok && result.status === "success") {
+        await Swal.fire({
+          icon: 'success',
+          title: 'Success!',
+          text: `Template ${template ? 'updated' : 'created'} successfully!`,
+          confirmButtonColor: '#3085d6',
+          timer: 2000,
+          timerProgressBar: true
+        });
+        router.push("/admin/broadcast");
+      } else {
+        console.error("Template creation failed:", result);
+        await Swal.fire({
+          icon: 'error',
+          title: 'Operation Failed',
+          text: `Failed to ${template ? 'update' : 'create'} template: ${result.message || 'Unknown error'}`,
+          confirmButtonColor: '#3085d6'
+        });
+      }
+    } catch (error) {
+      console.error("Error submitting template:", error);
+      await Swal.fire({
+        icon: 'error',
+        title: 'Unexpected Error',
+        text: `An error occurred while ${template ? 'updating' : 'creating'} the template.`,
+        confirmButtonColor: '#3085d6'
+      });
+    }
   };
 
   const handleVariableClick = (variable: string) => {
@@ -228,8 +296,6 @@ Mengirimkan QR code undangan sebagai peserta`
               >
                 {[
                   "QR Code",
-                  "Photo Selfie (vselfie only)",
-                  "Photo Selfie + Frame (vselfie only)",
                   "No Image",
                   "QR Code Card",
                   "Customize",
@@ -246,11 +312,47 @@ Mengirimkan QR code undangan sebagai peserta`
                   </div>
                 ))}
               </RadioGroup>
+              {imageAttachment === "qr-code-card" && (
+                <div className="mt-4">
+                  <Label className="text-gray-600">
+                    Upload QR code card template
+                  </Label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Upload a template image for QR code cards. This will be used to generate personalized QR code cards for guests.
+                  </p>
+                  {uploadedImageUrl && (
+                    <div className="mb-2">
+                      <p className="text-xs text-gray-500 mb-1">Current image:</p>
+                      <img 
+                        src={uploadedImageUrl} 
+                        alt="Current template" 
+                        className="max-w-xs max-h-32 object-contain border rounded"
+                      />
+                    </div>
+                  )}
+                  <Input
+                    type="file"
+                    name="image"
+                    className="mt-1"
+                    accept="image/png, image/jpeg, image/jpg"
+                  />
+                </div>
+              )}
               {imageAttachment === "customize" && (
                 <div className="mt-4">
                   <Label className="text-gray-600">
                     Upload your custom image here
                   </Label>
+                  {uploadedImageUrl && (
+                    <div className="mb-2">
+                      <p className="text-xs text-gray-500 mb-1">Current image:</p>
+                      <img 
+                        src={uploadedImageUrl} 
+                        alt="Current template" 
+                        className="max-w-xs max-h-32 object-contain border rounded"
+                      />
+                    </div>
+                  )}
                   <Input
                     type="file"
                     name="image"
@@ -261,6 +363,8 @@ Mengirimkan QR code undangan sebagai peserta`
               )}
             </div>
           </form>
+
+          
           <div className="mt-6 flex justify-end">
             <div className="bg-white p-4 rounded-lg shadow w-auto">
               <h3 className="font-bold mb-2 text-sm text-center text-gray-500">

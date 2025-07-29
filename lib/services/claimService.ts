@@ -78,9 +78,14 @@ export const getClaimableItems = async (
   };
 };
 
-export const getClaimableItem = async (id: string) => {
-  const item = await prisma.claimableItem.findUnique({
-    where: { id },
+export const getClaimableItem = async (id: string, eventId?: string) => {
+  const where: { id: string; eventId?: string } = { id };
+  if (eventId) {
+    where.eventId = eventId;
+  }
+  
+  const item = await prisma.claimableItem.findFirst({
+    where,
   });
   return item;
 };
@@ -120,10 +125,17 @@ export const recordClaimTransaction = async (
         guestId,
         claimableItemId: itemId,
       },
+      include: {
+        guest: true,
+      },
     });
 
     if (existingTransaction) {
-      throw new Error("Guest has already claimed this item");
+      return {
+        ...existingTransaction,
+        isExisting: true,
+        message: "Guest has already claimed this item",
+      };
     }
 
     const item = await tx.claimableItem.findUnique({
@@ -161,9 +173,16 @@ export const recordClaimTransaction = async (
           },
         },
       },
+      include: {
+        guest: true,
+      },
     });
 
-    return newTransaction;
+    return {
+      ...newTransaction,
+      isExisting: false,
+      message: "Claim recorded successfully",
+    };
   });
 
   return transaction;

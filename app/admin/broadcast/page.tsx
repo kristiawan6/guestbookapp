@@ -115,7 +115,7 @@ export default function BroadcastTemplatePage() {
         </button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-6">
-        <Link href="/admin/broadcast/add">
+        <Link href={`/admin/broadcast/add?type=${activeTab}`}>
           <div
             className="w-full min-h-[12rem] h-full bg-cover bg-center rounded-lg shadow-md flex items-center justify-center cursor-pointer"
             style={{ backgroundImage: "url('/wa-bg.png')" }}

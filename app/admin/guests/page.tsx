@@ -61,6 +61,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { TemplateSelectionPopup } from "@/components/ui/template-selection-popup";
+import { QRCardGenerator } from "@/components/ui/qr-card-generator";
 
 type Guest = {
   id: string;
@@ -99,6 +101,11 @@ export default function GuestPage() {
   const [meta, setMeta] = useState<Meta | null>(null);
   const [sortKey, setSortKey] = useState<keyof Guest>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  
+  // Popup states
+  const [isTemplatePopupOpen, setIsTemplatePopupOpen] = useState(false);
+  const [templateType, setTemplateType] = useState<"WhatsApp" | "Email">("WhatsApp");
+  const [isQRCardGeneratorOpen, setIsQRCardGeneratorOpen] = useState(false);
 
   const fetchGuests = useCallback(() => {
     if (selectedEventId) {
@@ -178,6 +185,103 @@ export default function GuestPage() {
         });
         fetchGuests();
         Swal.fire("Deleted!", "Your file has been deleted.", "success");
+      }
+    });
+  };
+
+  // Bulk action handlers
+  const handleBulkWhatsApp = () => {
+    if (selectedGuests.length === 0) {
+      Swal.fire("No guests selected", "Please select at least one guest to send WhatsApp messages.", "warning");
+      return;
+    }
+    setTemplateType("WhatsApp");
+    setIsTemplatePopupOpen(true);
+  };
+
+  const handleBulkEmail = () => {
+    if (selectedGuests.length === 0) {
+      Swal.fire("No guests selected", "Please select at least one guest to send emails.", "warning");
+      return;
+    }
+    setTemplateType("Email");
+    setIsTemplatePopupOpen(true);
+  };
+
+  const handleQRCardGeneration = () => {
+    if (selectedGuests.length === 0) {
+      Swal.fire("No guests selected", "Please select at least one guest to generate QR cards.", "warning");
+      return;
+    }
+    setIsQRCardGeneratorOpen(true);
+  };
+
+  const handleTemplateSelect = async (template: any) => {
+    // Here you would implement the actual sending logic
+    // For now, we'll just show a success message
+    try {
+      const response = await fetch('/api/guests/send-bulk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          templateId: template.id,
+          guestIds: selectedGuests,
+          type: templateType,
+          eventId: selectedEventId,
+        }),
+      });
+
+      if (response.ok) {
+        Swal.fire(
+          "Success!", 
+          `${templateType} messages sent to ${selectedGuests.length} guest(s)!`, 
+          "success"
+        );
+        setSelectedGuests([]);
+      } else {
+        throw new Error('Failed to send messages');
+      }
+    } catch (error) {
+      Swal.fire(
+        "Error!", 
+        `Failed to send ${templateType} messages. Please try again.`, 
+        "error"
+      );
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedGuests.length === 0) {
+      Swal.fire("No guests selected", "Please select at least one guest to delete.", "warning");
+      return;
+    }
+
+    Swal.fire({
+      title: "Are you sure?",
+      text: `You are about to delete ${selectedGuests.length} guest(s). This action cannot be undone!`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete them!",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await Promise.all(
+            selectedGuests.map(guestId => 
+              fetch(`/api/events/${selectedEventId}/guests/${guestId}`, {
+                method: "DELETE",
+              })
+            )
+          );
+          fetchGuests();
+          setSelectedGuests([]);
+          Swal.fire("Deleted!", `${selectedGuests.length} guest(s) have been deleted.`, "success");
+        } catch (error) {
+          Swal.fire("Error!", "Failed to delete some guests. Please try again.", "error");
+        }
       }
     });
   };
@@ -396,16 +500,16 @@ export default function GuestPage() {
                 <DropdownMenuItem>
                   <Printer className="mr-2 h-4 w-4" /> Print Label
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleQRCardGeneration}>
                   <QrCode className="mr-2 h-4 w-4" /> Print QRCode
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleBulkWhatsApp}>
                   <MessageSquare className="mr-2 h-4 w-4" /> Send Whatsapp
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleBulkEmail}>
                   <Mail className="mr-2 h-4 w-4" /> Send Email
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleBulkDelete}>
                   <Trash2 className="mr-2 h-4 w-4" /> Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -904,6 +1008,22 @@ export default function GuestPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Template Selection Popup */}
+      <TemplateSelectionPopup
+        isOpen={isTemplatePopupOpen}
+        onClose={() => setIsTemplatePopupOpen(false)}
+        onSelectTemplate={handleTemplateSelect}
+        type={templateType}
+        selectedGuestIds={selectedGuests}
+      />
+      
+      {/* QR Card Generator */}
+      <QRCardGenerator
+        isOpen={isQRCardGeneratorOpen}
+        onClose={() => setIsQRCardGeneratorOpen(false)}
+        selectedGuestIds={selectedGuests}
+      />
     </>
   );
 }

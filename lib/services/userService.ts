@@ -9,11 +9,11 @@ interface UserData {
   password?: string;
   role: UserRole;
   isActive?: boolean;
-  eventId?: string;
+  eventIds?: string[];
 }
 
 export const createUser = async (data: UserData) => {
-  const { username, email, password, role, isActive, eventId } = data;
+  const { username, email, password, role, isActive, eventIds } = data;
 
   if (!username || !email || !password || !role) {
     throw new Error("Missing required fields");
@@ -29,7 +29,7 @@ export const createUser = async (data: UserData) => {
       role: role as UserRole,
       isActive,
       events: {
-        create: eventId ? [{ event: { connect: { id: eventId } } }] : [],
+        create: eventIds ? eventIds.map(eventId => ({ event: { connect: { id: eventId } } })) : [],
       },
     },
   });
@@ -86,7 +86,7 @@ export const getUsers = async (
   return {
     data: users.map((u) => ({
       ...u,
-      eventId: u.events.length > 0 ? u.events[0].eventId : "",
+      eventIds: u.events.map(event => event.eventId),
     })),
     meta: {
       page,
@@ -98,7 +98,7 @@ export const getUsers = async (
 };
 
 export const updateUser = async (id: string, data: Partial<UserData>) => {
-  const { username, email, role, isActive, eventId } = data;
+  const { username, email, role, isActive, eventIds } = data;
 
   const updatedUser = await prisma.user.update({
     where: { id },
@@ -109,7 +109,7 @@ export const updateUser = async (id: string, data: Partial<UserData>) => {
       isActive,
       events: {
         deleteMany: {},
-        create: eventId ? [{ event: { connect: { id: eventId } } }] : [],
+        create: eventIds ? eventIds.map(eventId => ({ event: { connect: { id: eventId } } })) : [],
       },
     },
   });

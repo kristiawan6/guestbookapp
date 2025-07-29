@@ -22,6 +22,11 @@ export const broadcastTemplateSchema = z.object({
   name: z.string().min(1, "Name is required"),
   type: z.enum(["Email", "WhatsApp"]),
   content: z.string().min(1, "Content is required"),
+  subject: z.string().optional(),
+  footer: z.string().optional(),
+  button: z.string().optional(),
+  imageAttachment: z.string().optional(),
+  imageAttachmentType: z.string().optional(),
 });
 
 export const claimableItemSchema = z.object({

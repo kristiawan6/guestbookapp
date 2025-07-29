@@ -9,7 +9,7 @@ export default function EditBroadcastTemplatePage() {
   const params = useParams();
   const templateId = params.templateId as string;
   const { selectedEventId } = useStatistics();
-  const [template, setTemplate] = useState(null);
+  const [template, setTemplate] = useState<any>(null);
 
   useEffect(() => {
     if (selectedEventId && templateId) {
@@ -25,5 +25,5 @@ export default function EditBroadcastTemplatePage() {
     return <div>Loading...</div>;
   }
 
-  return <BroadcastTemplateForm template={template} />;
+  return <BroadcastTemplateForm template={template} templateType={template.type?.toLowerCase() || 'whatsapp'} />;
 }

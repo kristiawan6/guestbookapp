@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { apiResponse } from "@/lib/api-response";
 import prisma from "@/lib/prisma";
 import { randomInt } from "crypto";
-import { sendEmail } from "@/lib/services/emailService";
+import { sendOtpEmail } from "@/lib/services/emailService";
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    await sendEmail(email, "Your OTP for password reset", otp);
+    await sendOtpEmail(email, "Your OTP for password reset", otp);
 
     return apiResponse(
       "success",

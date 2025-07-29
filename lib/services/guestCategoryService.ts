@@ -22,7 +22,6 @@ export const createGuestCategory = async (
       eventId,
       name: {
         equals: name,
-        mode: "insensitive",
       },
     },
   });
@@ -75,16 +74,16 @@ export const getGuestCategories = async (
   const where: {
     eventId: string;
     OR?: (
-      | { name: { contains: string; mode: "insensitive" } }
-      | { code: { contains: string; mode: "insensitive" } }
-      | { description: { contains: string; mode: "insensitive" } }
+      | { name: { contains: string } }
+      | { code: { contains: string } }
+      | { description: { contains: string } }
     )[];
   } = { eventId };
   if (search) {
     where.OR = [
-      { name: { contains: search, mode: "insensitive" } },
-      { code: { contains: search, mode: "insensitive" } },
-      { description: { contains: search, mode: "insensitive" } },
+      { name: { contains: search } },
+      { code: { contains: search } },
+      { description: { contains: search } },
     ];
   }
 
@@ -134,7 +133,6 @@ export const updateGuestCategory = async (
       where: {
         name: {
           equals: name,
-          mode: "insensitive",
         },
         id: {
           not: id,
