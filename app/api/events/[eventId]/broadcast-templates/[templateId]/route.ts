@@ -24,10 +24,21 @@ export async function GET(
     await jwtVerify(token, secret);
     const { templateId } = await params;
     const broadcastTemplate = await getBroadcastTemplateById(templateId);
+    
+    // Map footerMessage back to footer for frontend compatibility
+    // Convert relative image paths to full URLs
+    const templateForFrontend = {
+      ...broadcastTemplate,
+      footer: broadcastTemplate.footerMessage,
+      imageAttachment: broadcastTemplate.imageAttachment && !broadcastTemplate.imageAttachment.startsWith('http') 
+        ? `${req.nextUrl.origin}${broadcastTemplate.imageAttachment.startsWith('/') ? '' : '/'}${broadcastTemplate.imageAttachment}`
+        : broadcastTemplate.imageAttachment,
+    };
+    
     return apiResponse(
       "success",
       "Broadcast template retrieved successfully",
-      broadcastTemplate,
+      templateForFrontend,
       null,
       null,
       200
@@ -74,10 +85,17 @@ export async function PUT(
       return apiResponse("error", "Invalid input", null, validation.error.errors, null, 400);
     }
     const broadcastTemplate = await updateBroadcastTemplate(templateId, validation.data);
+    
+    // Map footerMessage back to footer for frontend compatibility
+    const templateForFrontend = {
+      ...broadcastTemplate,
+      footer: broadcastTemplate.footerMessage,
+    };
+    
     return apiResponse(
       "success",
       "Broadcast template updated successfully",
-      broadcastTemplate,
+      templateForFrontend,
       null,
       null,
       200

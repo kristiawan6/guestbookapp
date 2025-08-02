@@ -6,6 +6,17 @@ import {
   Plus,
   Trash2,
   Upload,
+  Search,
+  Tags,
+  Users,
+  CheckCircle,
+  XCircle,
+  Target,
+  Activity,
+  BarChart3,
+  Hash,
+  FileText,
+  Settings,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -23,10 +34,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useStatistics } from "@/hooks/use-statistics";
 import Papa from "papaparse";
 import Swal from "sweetalert2";
@@ -195,199 +209,445 @@ export default function GuestCategoryPage() {
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Guest Category</h1>
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-80"
-          />
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="mr-2">
-                <Plus className="mr-2 h-4 w-4" /> Add
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {selectedCategory ? "Edit" : "Add"} Guest Category
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleAddCategory}>
-                <div className="grid gap-4 py-4">
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Tags className="h-6 w-6 text-emerald-600" />
+              Guest Categories
+            </h1>
+            <p className="text-gray-600 mt-1">Manage guest categories and quotas for your events</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search categories..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10 w-80 border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+              />
+            </div>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200">
+                  <Plus className="mr-2 h-4 w-4" /> Add Category
+                </Button>
+              </DialogTrigger>
+            <DialogContent className="max-w-2xl p-0 overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold flex items-center gap-3">
+                    <div className="bg-white/20 rounded-full p-2">
+                      <Tags className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <div>{selectedCategory ? "Edit" : "Create"} Guest Category</div>
+                      <div className="text-sm font-normal opacity-90 mt-1">
+                        {selectedCategory ? "Update category details" : "Add a new guest category"}
+                      </div>
+                    </div>
+                  </DialogTitle>
                   {selectedCategory && (
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="code" className="text-right">
-                        Code
-                      </Label>
-                      <Input
-                        id="code"
-                        name="code"
-                        defaultValue={selectedCategory?.code}
-                        className="col-span-3"
-                        readOnly
-                      />
+                    <div className="flex items-center gap-2 mt-4">
+                      <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                        ID: {selectedCategory.code}
+                      </Badge>
+                      <Badge 
+                        variant={selectedCategory.isActive ? "default" : "secondary"}
+                        className={selectedCategory.isActive 
+                          ? "bg-green-500 text-white" 
+                          : "bg-gray-500 text-white"
+                        }
+                      >
+                        {selectedCategory.isActive ? "Active" : "Inactive"}
+                      </Badge>
                     </div>
                   )}
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right" required>
-                      Name
-                    </Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      defaultValue={selectedCategory?.name}
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="description" className="text-right">
-                      Description
-                    </Label>
-                    <Input
-                      id="description"
-                      name="description"
-                      defaultValue={selectedCategory?.description}
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="quota" className="text-right">
-                      Quota
-                    </Label>
-                    <Input
-                      id="quota"
-                      name="quota"
-                      type="number"
-                      defaultValue={selectedCategory?.quota}
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="isActive" className="text-right">
-                      Is Active
-                    </Label>
-                    <Checkbox
-                      id="isActive"
-                      name="isActive"
-                      defaultChecked={selectedCategory?.isActive}
-                    />
+                </DialogHeader>
+              </div>
+
+              <form onSubmit={handleAddCategory} className="p-6">
+                <div className="space-y-6">
+                  {selectedCategory && (
+                    <Card className="border-gray-200">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Hash className="h-4 w-4 text-gray-500" />
+                          <Label className="text-sm font-semibold text-gray-700">Category Code</Label>
+                        </div>
+                        <Input
+                          id="code"
+                          name="code"
+                          defaultValue={selectedCategory?.code}
+                          className="bg-gray-50 border-gray-200"
+                          readOnly
+                          placeholder="Auto-generated code"
+                        />
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  <Card className="border-gray-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <Tags className="h-4 w-4 text-blue-500" />
+                        <Label htmlFor="name" className="text-sm font-semibold text-gray-700">
+                          Category Name *
+                        </Label>
+                      </div>
+                      <Input
+                        id="name"
+                        name="name"
+                        defaultValue={selectedCategory?.name}
+                        className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                        placeholder="Enter category name (e.g., VIP, Regular, Staff)"
+                        required
+                      />
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-gray-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <FileText className="h-4 w-4 text-green-500" />
+                        <Label htmlFor="description" className="text-sm font-semibold text-gray-700">
+                          Description
+                        </Label>
+                      </div>
+                      <Input
+                        id="description"
+                        name="description"
+                        defaultValue={selectedCategory?.description}
+                        className="border-gray-200 focus:border-green-500 focus:ring-green-500"
+                        placeholder="Brief description of this category"
+                      />
+                    </CardContent>
+                  </Card>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="border-gray-200">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Users className="h-4 w-4 text-purple-500" />
+                          <Label htmlFor="quota" className="text-sm font-semibold text-gray-700">
+                            Guest Quota
+                          </Label>
+                        </div>
+                        <Input
+                          id="quota"
+                          name="quota"
+                          type="number"
+                          min="0"
+                          defaultValue={selectedCategory?.quota}
+                          className="border-gray-200 focus:border-purple-500 focus:ring-purple-500"
+                          placeholder="Maximum guests (0 = unlimited)"
+                        />
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-gray-200">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Settings className="h-4 w-4 text-orange-500" />
+                          <Label htmlFor="isActive" className="text-sm font-semibold text-gray-700">
+                            Status
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-3 pt-2">
+                          <Checkbox
+                            id="isActive"
+                            name="isActive"
+                            defaultChecked={selectedCategory?.isActive ?? true}
+                            className="border-gray-300"
+                          />
+                          <Label htmlFor="isActive" className="text-sm text-gray-600">
+                            Active category (guests can be assigned)
+                          </Label>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
                 </div>
-                <Button type="submit">Save</Button>
+
+                <DialogFooter className="mt-8 pt-6 border-t border-gray-200">
+                  <div className="flex items-center justify-between w-full">
+                    <div className="text-sm text-gray-500">
+                      {selectedCategory ? "Update" : "Create"} category with the information above
+                    </div>
+                    <div className="flex gap-3">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => setSelectedCategory(null)}
+                        className="hover:bg-gray-50"
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        type="submit"
+                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                      >
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        {selectedCategory ? "Update Category" : "Create Category"}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogFooter>
               </form>
             </DialogContent>
           </Dialog>
-          <Button variant="outline" onClick={handleExport}>
-            <Upload className="mr-2 h-4 w-4" /> Export
-          </Button>
+            <Button variant="outline" onClick={handleExport} className="border-gray-300 hover:bg-gray-50 shadow-sm hover:shadow-md transition-all duration-200">
+              <Upload className="mr-2 h-4 w-4" /> Export
+            </Button>
+          </div>
         </div>
       </div>
-      <div className="bg-white p-4 rounded-lg shadow overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>No.</TableHead>
-              <TableHead>
-                <Button variant="ghost" onClick={() => handleSort("code")}>
-                  Code
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button variant="ghost" onClick={() => handleSort("name")}>
-                  Category Name
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button
-                  variant="ghost"
-                  onClick={() => handleSort("description")}
-                >
-                  Description
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button variant="ghost" onClick={() => handleSort("quota")}>
-                  Quota
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button variant="ghost" onClick={() => handleSort("isActive")}>
-                  Active
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead className="text-center">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {guestCategories.map((category, index) => (
-              <TableRow key={category.id}>
-                <TableCell>{index + 1}</TableCell>
-                <TableCell>{category.code}</TableCell>
-                <TableCell>{category.name}</TableCell>
-                <TableCell>{category.description}</TableCell>
-                <TableCell>{category.quota}</TableCell>
-                <TableCell>
-                  <span
-                    className={`px-2 py-1 rounded-full text-white ${
-                      category.isActive ? "bg-green-500" : "bg-red-500"
-                    }`}
+
+      {/* Statistics Cards */}
+      <div className="grid gap-6 md:grid-cols-4">
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Tags className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="text-xs font-medium text-green-600">+12%</div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Total Categories</p>
+              <p className="text-2xl font-bold text-gray-900">{meta?.total || 0}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="text-xs font-medium text-green-600">+8%</div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Active Categories</p>
+              <p className="text-2xl font-bold text-gray-900">{guestCategories.filter(c => c.isActive).length}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 rounded-lg bg-red-100 flex items-center justify-center">
+                <XCircle className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="text-xs font-medium text-red-600">-3%</div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Inactive Categories</p>
+              <p className="text-2xl font-bold text-gray-900">{guestCategories.filter(c => !c.isActive).length}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
+                <Target className="h-6 w-6 text-purple-600" />
+              </div>
+              <div className="text-xs font-medium text-green-600">+15%</div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Total Quota</p>
+              <p className="text-2xl font-bold text-gray-900">{guestCategories.reduce((sum, c) => sum + c.quota, 0)}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Table Card */}
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="bg-gray-50 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-semibold text-gray-900">Category Records</CardTitle>
+              <p className="text-sm text-gray-600 mt-1">
+                Showing {guestCategories.length} of {meta?.total || 0} categories
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Activity className="h-4 w-4" />
+              {guestCategories.filter(c => c.isActive).length} Active
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader className="bg-gray-50">
+              <TableRow className="border-b border-gray-200">
+                <TableHead className="font-semibold text-gray-700 py-4">#</TableHead>
+                <TableHead className="font-semibold text-gray-700">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => handleSort("code")} 
+                    className="hover:bg-gray-100 font-semibold text-gray-700"
                   >
-                    {category.isActive ? "Active" : "Inactive"}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mr-2"
-                    onClick={() => handleEdit(category)}
-                  >
-                    <Pencil className="mr-2 h-4 w-4" /> Edit
+                    Code
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDelete(category.id)}
+                </TableHead>
+                <TableHead className="font-semibold text-gray-700">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => handleSort("name")} 
+                    className="hover:bg-gray-100 font-semibold text-gray-700"
                   >
-                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                    Category Name
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
                   </Button>
-                </TableCell>
+                </TableHead>
+                <TableHead className="font-semibold text-gray-700">
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleSort("description")}
+                    className="hover:bg-gray-100 font-semibold text-gray-700"
+                  >
+                    Description
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </TableHead>
+                <TableHead className="font-semibold text-gray-700">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => handleSort("quota")} 
+                    className="hover:bg-gray-100 font-semibold text-gray-700"
+                  >
+                    Quota
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </TableHead>
+                <TableHead className="font-semibold text-gray-700">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => handleSort("isActive")} 
+                    className="hover:bg-gray-100 font-semibold text-gray-700"
+                  >
+                    Status
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </TableHead>
+                <TableHead className="text-center font-semibold text-gray-700">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <div className="flex justify-end items-center gap-2 mt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage(page - 1)}
-            disabled={page === 1}
-          >
-            Previous
-          </Button>
-          <span>
-            Page {page} of {meta?.totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage(page + 1)}
-            disabled={page === meta?.totalPages}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {guestCategories.map((category, index) => (
+                <TableRow key={category.id} className="hover:bg-gray-50 transition-colors duration-150">
+                  <TableCell className="font-medium text-gray-600 py-4">
+                    {((page - 1) * 10) + index + 1}
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                      {category.code}
+                    </span>
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <div className="flex items-center gap-2">
+                      <Tags className="h-4 w-4 text-gray-400" />
+                      <span className="font-medium text-gray-900">{category.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-4 text-gray-700 max-w-xs">
+                    <span className="truncate block">{category.description || '-'}</span>
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                      <Target className="w-3 h-3 mr-1" />
+                      {category.quota}
+                    </span>
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                        category.isActive 
+                          ? "bg-green-100 text-green-800 border border-green-200" 
+                          : "bg-red-100 text-red-800 border border-red-200"
+                      }`}
+                    >
+                      {category.isActive ? (
+                        <>
+                          <CheckCircle className="w-3 h-3 mr-1" />
+                          Active
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="w-3 h-3 mr-1" />
+                          Inactive
+                        </>
+                      )}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-center py-4">
+                    <div className="flex items-center justify-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(category)}
+                        className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-colors duration-200"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(category.id)}
+                        className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors duration-200"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          
+          {/* Pagination */}
+          {meta && meta.totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <div className="text-sm text-gray-600">
+                Showing {((meta.page - 1) * meta.limit) + 1} to {Math.min(meta.page * meta.limit, meta.total)} of {meta.total} results
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  disabled={page <= 1}
+                  className="border-gray-300 hover:bg-gray-100 transition-colors duration-200"
+                >
+                  Previous
+                </Button>
+                <span className="text-sm font-medium text-gray-700 px-3">
+                  Page {meta.page} of {meta.totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage(Math.min(meta.totalPages, page + 1))}
+                  disabled={page >= meta.totalPages}
+                  className="border-gray-300 hover:bg-gray-100 transition-colors duration-200"
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

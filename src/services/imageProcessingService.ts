@@ -37,6 +37,25 @@ export interface QRCodeOverlayOptions {
   };
 }
 
+export interface CoordinateField {
+  id: string;
+  type: 'qr-code' | 'text';
+  label: string;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  fontSize?: number;
+  fontWeight?: 'normal' | 'bold';
+  fieldName?: string;
+}
+
+export interface DynamicQRCodeOptions {
+  guestData: Guest;
+  blankTemplateBuffer: Buffer;
+  coordinateFields: CoordinateField[];
+}
+
 export class ImageProcessingService {
   /**
    * Generate a QR code buffer from guest data
@@ -81,6 +100,7 @@ export class ImageProcessingService {
     text: string,
     fontSize: number = 24,
     fontColor: string = '#000000',
+    fontWeight: string = 'normal',
     width: number = 400,
     height: number = 60
   ): Promise<Buffer> {
@@ -93,7 +113,7 @@ export class ImageProcessingService {
                 dominant-baseline="middle" 
                 font-family="Arial, sans-serif" 
                 font-size="${fontSize}" 
-                font-weight="bold" 
+                font-weight="${fontWeight}" 
                 fill="${fontColor}">
             ${text}
           </text>
@@ -135,6 +155,7 @@ export class ImageProcessingService {
         guestData.name,
         namePosition.fontSize,
         namePosition.fontColor,
+        'normal', // Default font weight for legacy method
         templateWidth - namePosition.x * 2, // Dynamic width based on template
         60
       );
@@ -160,6 +181,98 @@ export class ImageProcessingService {
     } catch (error) {
       throw new Error(`Failed to process QR code template: ${error}`);
     }
+  }
+
+  /**
+   * Process QR code template with dynamic coordinate fields
+   */
+  async processQRCodeTemplateWithDynamicFields(options: DynamicQRCodeOptions): Promise<Buffer> {
+    try {
+      const { guestData, blankTemplateBuffer, coordinateFields } = options;
+
+      // Get template metadata
+      const templateMetadata = await sharp(blankTemplateBuffer).metadata();
+      const templateWidth = templateMetadata.width || 400;
+      const templateHeight = templateMetadata.height || 600;
+
+      // Prepare composite operations
+      const compositeOperations: sharp.OverlayOptions[] = [];
+
+      // Process each coordinate field
+      for (const field of coordinateFields) {
+        if (field.type === 'qr-code') {
+          // Generate QR code
+          const qrWidth = field.width ? (field.width / 100) * templateWidth : 200;
+          const qrHeight = field.height ? (field.height / 100) * templateHeight : 200;
+          const qrCodeBuffer = await this.generateQRCodeBuffer(
+            guestData,
+            qrWidth,
+            qrHeight
+          );
+
+          // Center the QR code at the specified coordinates (like the preview)
+          compositeOperations.push({
+            input: qrCodeBuffer,
+            left: Math.round((field.x / 100) * templateWidth - qrWidth / 2),
+            top: Math.round((field.y / 100) * templateHeight - qrHeight / 2)
+          });
+        } else if (field.type === 'text' && field.fieldName) {
+          // Get field value from guest data
+          const fieldValue = this.getGuestFieldValue(guestData, field.fieldName);
+          if (fieldValue) {
+            // Calculate text dimensions
+            const textWidth = field.width ? (field.width / 100) * templateWidth : Math.round(templateWidth * 0.8);
+            const textHeight = field.height ? (field.height / 100) * templateHeight : Math.round((field.fontSize || 16) * 1.5);
+            
+            // Create text overlay
+            const textOverlayBuffer = await this.createTextOverlay(
+              fieldValue,
+              field.fontSize || 16,
+              '#000000',
+              field.fontWeight || 'normal',
+              textWidth,
+              textHeight
+            );
+
+            // Center the text at the specified coordinates (like the preview)
+            compositeOperations.push({
+              input: textOverlayBuffer,
+              left: Math.round((field.x / 100) * templateWidth - textWidth / 2),
+              top: Math.round((field.y / 100) * templateHeight - textHeight / 2)
+            });
+          }
+        }
+      }
+
+      // Composite all elements onto the blank template
+      const processedImage = await sharp(blankTemplateBuffer)
+        .composite(compositeOperations)
+        .png()
+        .toBuffer();
+
+      return processedImage;
+    } catch (error) {
+      throw new Error(`Failed to process dynamic QR code template: ${error}`);
+    }
+  }
+
+  /**
+   * Get guest field value by field name
+   */
+  private getGuestFieldValue(guestData: Guest, fieldName: string): string {
+    const fieldMap: { [key: string]: string } = {
+      'Fullname': guestData.name || '',
+      'Email': guestData.email || '',
+      'Address / Institution': guestData.address || '',
+      'Table Number': guestData.tableNumber || '',
+      'Notes': guestData.notes || '',
+      'Total Pack': guestData.numberOfGuests?.toString() || '1',
+      'Link Web Inv (Personal)': guestData.invitationLink || '',
+      'Link RSVP': guestData.invitationLink || '',
+      'Link Web (General)': guestData.invitationLink || ''
+    };
+
+    return fieldMap[fieldName] || '';
   }
 
   /**

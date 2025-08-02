@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { OtpEmail } from "@/emails/otp-email";
+import { BroadcastEmail } from "@/emails/broadcast-email";
 import React from "react";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -59,43 +60,18 @@ export const sendEmail = async (
       from: process.env.EMAIL_FROM || "onboarding@resend.dev",
       to,
       subject,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-            <h2 style="color: #333; margin: 0 0 10px 0;">Event Notification</h2>
-          </div>
-          <div style="background-color: white; padding: 20px; border-radius: 8px; border: 1px solid #e9ecef;">
-            <div style="white-space: pre-wrap; line-height: 1.6; color: #333;">${message}</div>
-          </div>
-          <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; font-size: 12px; color: #666;">
-            <p style="margin: 0;">This email was sent from the Guest Management System.</p>
-          </div>
-        </div>
-      `,
+      react: BroadcastEmail({ message }) as React.ReactElement,
     };
 
-    // Add attachments if provided
-    if (attachments && attachments.length > 0) {
-      emailData.attachments = attachments.map(attachment => {
-        const attachmentObj: any = {
-          filename: attachment.filename
-        };
-        
-        if (attachment.content) {
-          attachmentObj.content = attachment.content;
-        }
-        
-        if (attachment.path) {
-          attachmentObj.path = attachment.path;
-        }
-        
-        if (attachment.contentType) {
-          attachmentObj.content_type = attachment.contentType;
-        }
-        
-        return attachmentObj;
-      });
-    }
+  if (attachments && attachments.length > 0) {
+    emailData.attachments = attachments
+      .filter(att => att.content) // hanya ambil yang punya base64 content
+      .map(att => ({
+        filename: att.filename,
+        content: att.content, // wajib base64
+        contentType: att.contentType,
+      }));
+  }
 
     await resend.emails.send(emailData);
     return true;

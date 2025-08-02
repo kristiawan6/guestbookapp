@@ -5,6 +5,13 @@ import {
   Pencil,
   Plus,
   Trash2,
+  Users,
+  Search,
+  UserCheck,
+  UserX,
+  Shield,
+  Mail,
+  Activity,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -22,10 +29,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Swal from "sweetalert2";
 import { useStatistics } from "@/hooks/use-statistics";
 
@@ -183,230 +194,478 @@ export default function UserManagementPage() {
     }
   };
 
+  const totalUsers = users.length;
+  const activeUsers = users.filter(user => user.isActive).length;
+  const inactiveUsers = totalUsers - activeUsers;
+  const adminUsers = users.filter(user => user.role === 'SuperAdmin').length;
+
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">User Management</h1>
-        <div className="flex items-center gap-2">
-          <Input
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-80"
-          />
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button
-                className="mr-2"
-                onClick={() => {
-                  setSelectedUser(null);
-                  setIsDialogOpen(true);
-                }}
-              >
-                <Plus className="mr-2 h-4 w-4" /> Add User
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>
-                  {selectedUser ? "Edit" : "Add"} User
-                </DialogTitle>
-              </DialogHeader>
-              <form
-                key={selectedUser ? "edit-user-form" : "add-user-form"}
-                onSubmit={handleAddUser}
-              >
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="username" className="text-right" required>
-                      Username
-                    </Label>
-                    <Input
-                      id="username"
-                      name="username"
-                      defaultValue={selectedUser?.username}
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="email" className="text-right" required>
-                      Email
-                    </Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      defaultValue={selectedUser?.email}
-                      className="col-span-3"
-                    />
-                  </div>
-                  {!selectedUser && (
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="password" className="text-right" required>
-                        Password
-                      </Label>
-                      <Input
-                        id="password"
-                        name="password"
-                        type="password"
-                        className="col-span-3"
-                      />
+    <div className="space-y-6">
+      {/* Header Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Users className="h-6 w-6 text-emerald-600" />
+              User Management
+            </h1>
+            <p className="text-gray-600 mt-1">Manage system users and their permissions</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search users..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10 w-80 border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+              />
+            </div>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                  onClick={() => {
+                    setSelectedUser(null);
+                    setIsDialogOpen(true);
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Add User
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+                <DialogHeader className="pb-4 border-b border-gray-100">
+                  <DialogTitle className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+                    {selectedUser ? (
+                      <><Pencil className="h-5 w-5 text-blue-600" /> Edit User</>
+                    ) : (
+                      <><Plus className="h-5 w-5 text-emerald-600" /> Add New User</>
+                    )}
+                  </DialogTitle>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {selectedUser ? "Update user information and permissions" : "Create a new user account with appropriate access"}
+                  </p>
+                </DialogHeader>
+                
+                <form
+                  key={selectedUser ? "edit-user-form" : "add-user-form"}
+                  onSubmit={handleAddUser}
+                  className="p-6 space-y-4"
+                >
+                  {/* Basic Information */}
+                  <div className="space-y-4">
+                    <h3 className="font-medium text-gray-900 flex items-center gap-2 text-sm">
+                      <Mail className="h-4 w-4 text-blue-600" />
+                      Basic Information
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label htmlFor="username" className="text-xs font-medium text-gray-700">
+                          Username <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="username"
+                          name="username"
+                          defaultValue={selectedUser?.username}
+                          placeholder="Enter username"
+                          className="h-9 text-sm"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="email" className="text-xs font-medium text-gray-700">
+                          Email Address <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          defaultValue={selectedUser?.email}
+                          placeholder="Enter email address"
+                          className="h-9 text-sm"
+                          required
+                        />
+                      </div>
                     </div>
-                  )}
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="role" className="text-right">
-                      Role
-                    </Label>
-                    <select
-                      id="role"
-                      name="role"
-                      defaultValue={selectedUser?.role}
-                      className="col-span-3 border rounded-md"
-                    >
-                      <option value="AdminEvents">AdminEvents</option>
-                      <option value="SuperAdmin">SuperAdmin</option>
-                    </select>
+                    {!selectedUser && (
+                      <div className="space-y-1">
+                        <Label htmlFor="password" className="text-xs font-medium text-gray-700">
+                          Password <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="password"
+                          name="password"
+                          type="password"
+                          placeholder="Enter secure password"
+                          className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                          required
+                        />
+                      </div>
+                    )}
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label className="text-right">
-                      Events
-                    </Label>
-                    <div className="col-span-3 space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
-                      {events.map((event) => (
-                        <div key={event.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`event-${event.id}`}
-                            name="eventIds"
-                            value={event.id}
-                            defaultChecked={selectedUser?.eventIds?.includes(event.id)}
-                          />
-                          <Label htmlFor={`event-${event.id}`} className="text-sm">
-                            {event.name}
-                          </Label>
+
+                  {/* Role & Permissions */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-purple-600" />
+                      Role & Permissions
+                    </h3>
+                    <div className="grid gap-3">
+                      <div className="space-y-1.5">
+                        <Label htmlFor="role" className="text-xs font-medium text-gray-700">
+                          User Role
+                        </Label>
+                        <Select name="role" defaultValue={selectedUser?.role || "AdminEvents"}>
+                          <SelectTrigger className="h-8 border-gray-300 focus:border-purple-500 text-sm">
+                            <SelectValue placeholder="Select user role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="AdminEvents">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="text-xs">Admin Events</Badge>
+                                <span className="text-xs text-gray-600">Manage events and guests</span>
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="SuperAdmin">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="destructive" className="text-xs">Super Admin</Badge>
+                                <span className="text-xs text-gray-600">Full system access</span>
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-1.5">
+                        <Label className="text-xs font-medium text-gray-700">
+                          Event Access
+                        </Label>
+                        <div className="border border-gray-300 rounded-lg p-2 max-h-32 overflow-y-auto bg-white">
+                          {events.length > 0 ? (
+                            <div className="space-y-2">
+                              {events.map((event) => (
+                                <div key={event.id} className="flex items-center space-x-2 p-1.5 hover:bg-gray-50 rounded-md">
+                                  <Checkbox
+                                    id={`event-${event.id}`}
+                                    name="eventIds"
+                                    value={event.id}
+                                    defaultChecked={selectedUser?.eventIds?.includes(event.id)}
+                                    className="border-gray-300 h-3.5 w-3.5"
+                                  />
+                                  <Label htmlFor={`event-${event.id}`} className="text-xs font-medium text-gray-700 cursor-pointer flex-1">
+                                    {event.name}
+                                  </Label>
+                                  <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+                                    Event
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-500 text-center py-3">No events available</p>
+                          )}
                         </div>
-                      ))}
+                      </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="isActive" className="text-right">
-                      Is Active
-                    </Label>
-                    <Checkbox
-                      id="isActive"
-                      name="isActive"
-                      defaultChecked={selectedUser?.isActive}
-                    />
+
+                  {/* Account Status */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                      <Activity className="h-4 w-4 text-green-600" />
+                      Account Status
+                    </h3>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="isActive"
+                        name="isActive"
+                        defaultChecked={selectedUser?.isActive ?? true}
+                        className="border-gray-300 h-3.5 w-3.5"
+                      />
+                      <div className="flex-1">
+                        <Label htmlFor="isActive" className="text-xs font-medium text-gray-700 cursor-pointer">
+                          Active Account
+                        </Label>
+                        <p className="text-xs text-gray-500">
+                          Active users can log in and access the system
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <Button type="submit">Save</Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  
+                  <DialogFooter className="mt-6 pt-6 border-t border-gray-200">
+                    <div className="flex gap-3 w-full sm:w-auto">
+                      <Button 
+                        type="button"
+                        variant="outline" 
+                        onClick={() => setIsDialogOpen(false)}
+                        className="flex-1 sm:flex-none"
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        type="submit"
+                        className="flex-1 sm:flex-none bg-gradient-to-r from-emerald-500 to-blue-600 hover:from-emerald-600 hover:to-blue-700 text-white border-0"
+                      >
+                        {selectedUser ? (
+                          <><Pencil className="mr-2 h-4 w-4" /> Update User</>
+                        ) : (
+                          <><Plus className="mr-2 h-4 w-4" /> Create User</>
+                        )}
+                      </Button>
+                    </div>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </div>
-      <div className="bg-white p-4 rounded-lg shadow">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>No.</TableHead>
-              <TableHead>
-                <Button variant="ghost" onClick={() => handleSort("username")}>
-                  Username
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button variant="ghost" onClick={() => handleSort("email")}>
-                  Email
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button variant="ghost" onClick={() => handleSort("role")}>
-                  Role
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>
-                <Button variant="ghost" onClick={() => handleSort("isActive")}>
-                  Is Active
-                  <ArrowUpDown className="ml-2 h-4 w-4" />
-                </Button>
-              </TableHead>
-              <TableHead>Events</TableHead>
-              <TableHead className="text-center">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user, index) => (
-              <TableRow key={user.id}>
-                <TableCell>{index + 1}</TableCell>
-                <TableCell>{user.username}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.role}</TableCell>
-                <TableCell>
-                  <span
-                    className={`px-2 py-1 rounded-full text-white ${
-                      user.isActive ? "bg-green-500" : "bg-red-500"
-                    }`}
+
+      {/* Statistics Cards */}
+      <div className="grid gap-6 md:grid-cols-4">
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                <Users className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="text-xs font-medium text-green-600">+15%</div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Total Users</p>
+              <p className="text-2xl font-bold text-gray-900">{totalUsers}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
+                <UserCheck className="h-6 w-6 text-green-600" />
+              </div>
+              <div className="text-xs font-medium text-green-600">+8%</div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Active Users</p>
+              <p className="text-2xl font-bold text-gray-900">{activeUsers}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 rounded-lg bg-red-100 flex items-center justify-center">
+                <UserX className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="text-xs font-medium text-red-600">-2%</div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Inactive Users</p>
+              <p className="text-2xl font-bold text-gray-900">{inactiveUsers}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-200">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
+                <Shield className="h-6 w-6 text-purple-600" />
+              </div>
+              <div className="text-xs font-medium text-green-600">+3%</div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Admin Users</p>
+              <p className="text-2xl font-bold text-gray-900">{adminUsers}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      {/* Users Table */}
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="bg-gray-50 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-semibold text-gray-900">User Records</CardTitle>
+              <p className="text-sm text-gray-600 mt-1">
+                Showing {users.length} of {meta?.total || 0} users
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Activity className="h-4 w-4" />
+              {activeUsers} Active
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader className="bg-gray-50">
+              <TableRow className="border-b border-gray-200">
+                <TableHead className="font-semibold text-gray-700 py-4">#</TableHead>
+                <TableHead className="font-semibold text-gray-700">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => handleSort("username")}
+                    className="hover:bg-gray-100 font-semibold text-gray-700"
                   >
-                    {user.isActive ? "Active" : "Inactive"}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {user.eventIds?.map((eventId) => {
-                      const event = events.find(e => e.id === eventId);
-                      return event ? (
-                        <span key={eventId} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                          {event.name}
-                        </span>
-                      ) : null;
-                    })}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mr-2"
-                    onClick={() => handleEdit(user)}
-                  >
-                    <Pencil className="mr-2 h-4 w-4" /> Edit
+                    Username
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => handleDelete(user.id)}
+                </TableHead>
+                <TableHead className="font-semibold text-gray-700">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => handleSort("email")}
+                    className="hover:bg-gray-100 font-semibold text-gray-700"
                   >
-                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                    Email
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
                   </Button>
-                </TableCell>
+                </TableHead>
+                <TableHead className="font-semibold text-gray-700">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => handleSort("role")}
+                    className="hover:bg-gray-100 font-semibold text-gray-700"
+                  >
+                    Role
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </TableHead>
+                <TableHead className="font-semibold text-gray-700">
+                  <Button 
+                    variant="ghost" 
+                    onClick={() => handleSort("isActive")}
+                    className="hover:bg-gray-100 font-semibold text-gray-700"
+                  >
+                    Status
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </TableHead>
+                <TableHead className="font-semibold text-gray-700">Events</TableHead>
+                <TableHead className="text-center font-semibold text-gray-700">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <div className="flex justify-end items-center gap-2 mt-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage(page - 1)}
-            disabled={page === 1}
-          >
-            Previous
-          </Button>
-          <span>
-            Page {page} of {meta?.totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage(page + 1)}
-            disabled={page === meta?.totalPages}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {users.map((user, index) => (
+                <TableRow key={user.id} className="hover:bg-gray-50 transition-colors duration-150">
+                  <TableCell className="font-medium text-gray-600 py-4">
+                    {(page - 1) * 10 + index + 1}
+                  </TableCell>
+                  <TableCell className="font-medium text-gray-900">{user.username}</TableCell>
+                  <TableCell className="text-gray-600">
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-gray-400" />
+                      {user.email}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                      user.role === 'SuperAdmin' 
+                        ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                        : 'bg-blue-100 text-blue-800 border border-blue-200'
+                    }`}>
+                      <Shield className="w-3 h-3 mr-1" />
+                      {user.role}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                        user.isActive 
+                          ? "bg-green-100 text-green-800 border border-green-200" 
+                          : "bg-red-100 text-red-800 border border-red-200"
+                      }`}
+                    >
+                      {user.isActive ? (
+                        <>
+                          <UserCheck className="w-3 h-3 mr-1" />
+                          Active
+                        </>
+                      ) : (
+                        <>
+                          <UserX className="w-3 h-3 mr-1" />
+                          Inactive
+                        </>
+                      )}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1 max-w-xs">
+                      {user.eventIds?.slice(0, 2).map((eventId) => {
+                        const event = events.find(e => e.id === eventId);
+                        return event ? (
+                          <span key={eventId} className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs border border-emerald-200">
+                            {event.name}
+                          </span>
+                        ) : null;
+                      })}
+                      {user.eventIds?.length > 2 && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-xs border border-gray-200">
+                          +{user.eventIds.length - 2} more
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-colors duration-200"
+                        onClick={() => handleEdit(user)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors duration-200"
+                        onClick={() => handleDelete(user.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          
+          {/* Pagination */}
+          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <div className="text-sm text-gray-600">
+              Showing {((page - 1) * 10) + 1} to {Math.min(page * 10, meta?.total || 0)} of {meta?.total || 0} results
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(page - 1)}
+                disabled={page === 1}
+                className="border-gray-300 hover:bg-gray-100 transition-colors duration-200"
+              >
+                Previous
+              </Button>
+              <span className="text-sm font-medium text-gray-700 px-3">
+                Page {page} of {meta?.totalPages || 1}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(page + 1)}
+                disabled={page === meta?.totalPages}
+                className="border-gray-300 hover:bg-gray-100 transition-colors duration-200"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

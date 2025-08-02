@@ -49,12 +49,7 @@ export const useStatistics = () => {
     events,
     selectedEventId,
     setSelectedEventId,
-    statistics: {
-      ...statistics,
-      totalEvents: 1,
-      totalGuestsLastEvent: 201,
-      deletedGuests: 51,
-    },
+    statistics,
     isLoading: isUserLoading || isStatisticsLoading || isEventsLoading,
     error: userError || statisticsError,
   };

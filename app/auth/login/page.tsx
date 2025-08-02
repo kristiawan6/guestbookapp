@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import React, { useActionState, useEffect } from "react";
 import { login } from "@/app/auth/login/actions";
 import Image from "next/image";
@@ -11,6 +12,7 @@ import Link from "next/link";
 import { usePrefetchUser } from "@/hooks/use-prefetch-user";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { Lock, Mail } from "lucide-react";
  
  export default function LoginPage() {
    const [state, formAction] = useActionState(login, { error: "" });
@@ -46,64 +48,106 @@ import { useRouter } from "next/navigation";
   }, [state, router]);
 
   return (
-    <div className="flex min-h-screen">
-      <div className="relative w-1/2">
-        <Image
-          src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-          alt="Login background"
-          fill
-          className="object-cover"
-        />
-      </div>
-      <div className="flex items-center justify-center w-1/2">
-        <div className="w-full max-w-sm p-8 space-y-6">
-          <h1 className="text-2xl font-bold">Login</h1>
-          <form
-            action={(formData) => {
-              setLoading(true);
-              setProgress(50);
-              formAction(formData);
-            }}
-            className="space-y-4"
-          >
-            <div className="space-y-2">
-              <Label htmlFor="username">Username or Email</Label>
-              <Input
-                id="username"
-                name="username"
-                placeholder="Enter your username or email"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <PasswordInput
-                id="password"
-                name="password"
-                placeholder="Enter your password"
-                required
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Link
-                href="/auth/reset-password"
-                className="text-sm text-blue-600 hover:underline"
-              >
-                Forgot Password?
-              </Link>
-            </div>
-            <div className="flex justify-end">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Logo and Header */}
+        <div className="text-center mb-8">
+          <div className="mb-6">
+            <Image 
+              src="/guestly_logo.svg" 
+              alt="Guestly Logo" 
+              width={120} 
+              height={40} 
+              className="mx-auto"
+            />
+          </div>
+          <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+            Sign In
+          </h1>
+          <p className="text-gray-600">
+            Enter your credentials to access your account
+          </p>
+        </div>
+
+        <Card className="shadow-lg bg-white border border-gray-200">
+          <CardContent className="p-8 space-y-6">
+            <form
+              action={(formData) => {
+                setLoading(true);
+                setProgress(50);
+                formAction(formData);
+              }}
+              className="space-y-5"
+            >
+              <div className="space-y-2">
+                <Label htmlFor="username" className="text-sm font-medium text-gray-700">
+                  Username or Email
+                </Label>
+                <Input
+                  id="username"
+                  name="username"
+                  type="text"
+                  placeholder="super@admin"
+                  required
+                  className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  Password
+                </Label>
+                <PasswordInput
+                  id="password"
+                  name="password"
+                  placeholder="••••••••"
+                  required
+                  className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+                  
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="remember"
+                    name="remember"
+                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <Label htmlFor="remember" className="text-sm text-gray-600">
+                    Remember me
+                  </Label>
+                </div>
+                <Link
+                  href="/auth/reset-password"
+                  className="text-sm text-blue-600 hover:text-blue-500 font-medium"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+
               <Button
                 type="submit"
-                className="w-full max-w-xs"
-                loading={loading}
-                progress={progress}
+                disabled={loading}
+                className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium"
               >
-                Login
+                {loading ? "Signing in..." : "Sign In"}
               </Button>
+            </form>
+
+            <div className="text-center pt-4 border-t border-gray-200">
+              <p className="text-sm text-gray-600">
+                Need help?{" "}
+                <Link
+                  href="#"
+                  className="text-blue-600 hover:text-blue-500 font-medium"
+                >
+                  Contact Support
+                </Link>
+              </p>
             </div>
-          </form>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

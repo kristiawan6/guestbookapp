@@ -3,7 +3,7 @@ import { jwtVerify } from "jose";
 import prisma from "@/lib/prisma";
 import { sendWhatsAppMessage } from "@/lib/services/whatsappService";
 import { sendEmail, sendEmailWithQRCard } from "@/lib/services/emailService";
-import { imageProcessingService } from "../../../../../src/services/imageProcessingService";
+import { imageProcessingService } from "../../../../../../src/services/imageProcessingService";
 import { readFile } from "fs/promises";
 import path from "path";
 
@@ -76,14 +76,23 @@ export async function POST(
       // Check if template has QR code card attachment
       if (template.imageAttachmentType === "qr-code-card" && template.imageAttachment) {
         console.log("Processing QR code card template for email broadcast");
-        // Get full guest data for QR code processing
+        
+        // Get full guest data for QR code processing based on recipient type
+        let guestWhereClause: any = {
+          eventId: (await params).eventId,
+          email: { not: null },
+          qrCode: { not: null }
+        };
+        
+        if (recipientType === "individual") {
+          guestWhereClause.id = { in: recipientIds };
+        } else if (recipientType === "category") {
+          guestWhereClause.guestCategoryId = { in: recipientIds };
+        }
+        // For "all" type, no additional filter needed
+        
         const fullRecipients = await prisma.guest.findMany({
-          where: {
-            eventId: (await params).eventId,
-            id: { in: recipientIds },
-            email: { not: null },
-            qrCode: { not: null }
-          },
+          where: guestWhereClause,
           select: { id: true, name: true, email: true, qrCode: true },
         });
         console.log(`Template: ${template.name}, Recipients: ${fullRecipients.length}`);
@@ -93,13 +102,9 @@ export async function POST(
         for (const recipient of fullRecipients) {
           if (recipient.email && recipient.qrCode) {
             try {
-              // Download the blank template
-              const templateResponse = await fetch(template.imageAttachment);
-              if (!templateResponse.ok) {
-                console.error(`Failed to download template for ${recipient.name}`);
-                continue;
-              }
-              const templateBuffer = Buffer.from(await templateResponse.arrayBuffer());
+              // Read the blank template from file system
+              const templateImagePath = path.join(process.cwd(), 'public', template.imageAttachment);
+              const templateBuffer = await readFile(templateImagePath);
               
               // Process QR code template with guest data
                const processedImageBuffer = await imageProcessingService.processQRCodeTemplate({
@@ -160,8 +165,53 @@ export async function POST(
             }
           }
         }
+      } else if (template.imageAttachment && template.imageAttachment !== "no-image" && template.imageAttachment !== "qr-code") {
+        // Regular email with image attachment (not QR code card)
+        console.log("Processing regular image attachment for email broadcast");
+        
+        for (const recipient of recipients) {
+          if (recipient.email) {
+            try {
+              // Read the image attachment from file system
+              const imagePath = path.join(process.cwd(), 'public', template.imageAttachment);
+              const imageBuffer = await readFile(imagePath);
+              const base64Image = imageBuffer.toString('base64');
+              
+              // Determine content type based on file extension
+              const fileExtension = path.extname(template.imageAttachment).toLowerCase();
+              let contentType = 'image/png'; // default
+              if (fileExtension === '.jpg' || fileExtension === '.jpeg') {
+                contentType = 'image/jpeg';
+              } else if (fileExtension === '.gif') {
+                contentType = 'image/gif';
+              } else if (fileExtension === '.webp') {
+                contentType = 'image/webp';
+              }
+              
+              // Create attachment object
+              const attachment = {
+                content: base64Image,
+                filename: path.basename(template.imageAttachment),
+                contentType: contentType
+              };
+              
+              console.log(`Sending email with image attachment to ${recipient.email}: ${attachment.filename}`);
+              const emailResult = await sendEmail(
+                recipient.email,
+                template.subject || template.name,
+                template.content,
+                [attachment]
+              );
+              console.log(`Email sent result: ${emailResult}`);
+            } catch (error) {
+              console.error(`Failed to send email with attachment to ${recipient.email}:`, error);
+              // Fallback to sending email without attachment
+              await sendEmail(recipient.email, template.subject || template.name, template.content);
+            }
+          }
+        }
       } else {
-        // Regular email without QR card attachment
+        // Regular email without any attachment
         for (const recipient of recipients) {
           if (recipient.email) {
             await sendEmail(recipient.email, template.subject || template.name, template.content);

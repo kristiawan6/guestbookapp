@@ -5,6 +5,20 @@ export const getGuestStatistics = async (eventId: string) => {
     where: { eventId },
   });
 
+  const activeGuests = await prisma.guest.count({
+    where: { 
+      eventId,
+      isDeleted: false,
+    },
+  });
+
+  const deletedGuests = await prisma.guest.count({
+    where: { 
+      eventId,
+      isDeleted: true,
+    },
+  });
+
   const totalEvents = await prisma.event.count();
   const totalGuestsLastEvent = await prisma.guest.count({
     where: {
@@ -35,12 +49,87 @@ export const getGuestStatistics = async (eventId: string) => {
     },
   });
 
+  // Calculate RSVP rate (assuming guests with attendance status)
+  const rsvpGuests = await prisma.guest.count({
+    where: {
+      eventId,
+      isDeleted: false,
+      // Add RSVP logic here if you have attendance tracking
+    },
+  });
+
+  const rsvpRate = totalGuests > 0 ? Math.round((rsvpGuests / totalGuests) * 100) : 0;
+
+  // Get guest categories distribution
+  const guestCategories = await prisma.guestCategory.findMany({
+    where: { eventId },
+    include: {
+      _count: {
+        select: {
+          guests: {
+            where: {
+              isDeleted: false,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const categoryDistribution = guestCategories.map((category, index) => ({
+    name: category.name,
+    value: category._count.guests,
+    color: ['#8B5CF6', '#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5A2B'][index % 6],
+  }));
+
+  // Get monthly trends (last 6 months)
+  const monthlyTrends = [];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const currentDate = new Date();
+  
+  for (let i = 5; i >= 0; i--) {
+    const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+    const nextDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i + 1, 1);
+    
+    const monthGuests = await prisma.guest.count({
+      where: {
+        eventId,
+        createdAt: {
+          gte: date,
+          lt: nextDate,
+        },
+      },
+    });
+    
+    const monthActiveGuests = await prisma.guest.count({
+      where: {
+        eventId,
+        isDeleted: false,
+        createdAt: {
+          gte: date,
+          lt: nextDate,
+        },
+      },
+    });
+    
+    monthlyTrends.push({
+      month: months[date.getMonth()],
+      guests: monthGuests,
+      active: monthActiveGuests,
+    });
+  }
+
   return {
     totalGuests,
+    activeGuests,
+    deletedGuests,
     totalEvents,
     totalGuestsLastEvent,
     totalMessages,
     newMessages,
     claimedSouvenirs,
+    rsvpRate,
+    categoryDistribution,
+    monthlyTrends,
   };
 };

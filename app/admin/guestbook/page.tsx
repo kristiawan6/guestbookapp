@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpDown, Pencil, Trash2 } from "lucide-react";
+import { ArrowUpDown, Pencil, Trash2, MessageSquare, FileText, CheckCircle, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import {
   Table,
@@ -16,10 +16,14 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { useStatistics } from "@/hooks/use-statistics";
 import Swal from "sweetalert2";
 
@@ -232,36 +236,102 @@ export default function GuestbookPage() {
         </div>
       </div>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Message</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleUpdateMessage}>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="content" className="text-right">
-                  Content
-                </Label>
-                <Input
-                  id="content"
-                  name="content"
-                  defaultValue={selectedMessage?.content}
-                  className="col-span-3"
-                />
+        <DialogContent className="max-w-2xl">
+          {/* Gradient Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 -mx-6 -mt-6 px-6 py-4 mb-6">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3 text-white text-xl">
+                <MessageSquare className="h-6 w-6" />
+                Edit Message
+              </DialogTitle>
+              <p className="text-blue-100 text-sm mt-1">
+                Review and moderate guest message content
+              </p>
+            </DialogHeader>
+          </div>
+
+          <form id="message-form" onSubmit={handleUpdateMessage} className="space-y-6">
+            {/* Message Content Card */}
+            <Card className="border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <FileText className="h-5 w-5 text-blue-600" />
+                  Message Content
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label htmlFor="content" className="flex items-center gap-2 font-medium">
+                    <MessageSquare className="h-4 w-4 text-gray-500" />
+                    Guest Message
+                  </Label>
+                  <Textarea
+                    id="content"
+                    name="content"
+                    defaultValue={selectedMessage?.content}
+                    placeholder="Enter the guest message content..."
+                    className="focus:ring-2 focus:ring-blue-500 min-h-[120px]"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Approval Status Card */}
+            <Card className="border-l-4 border-l-green-500 shadow-sm hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  Approval Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="approved"
+                    name="approved"
+                    defaultChecked={selectedMessage?.approved}
+                    className="focus:ring-2 focus:ring-green-500"
+                  />
+                  <div className="flex flex-col">
+                    <Label htmlFor="approved" className="flex items-center gap-2 font-medium cursor-pointer">
+                      <CheckCircle className="h-4 w-4 text-gray-500" />
+                      Approve this message for public display
+                    </Label>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Approved messages will be visible to all guests
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </form>
+
+          <DialogFooter className="bg-gray-50 px-6 py-4 -mx-6 -mb-6 mt-6 rounded-b-lg border-t">
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Sparkles className="h-4 w-4" />
+                <span>Changes will be applied immediately</span>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="approved" className="text-right">
-                  Approved
-                </Label>
-                <Checkbox
-                  id="approved"
-                  name="approved"
-                  defaultChecked={selectedMessage?.approved}
-                />
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                  className="border-gray-300 hover:bg-gray-50"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  form="message-form"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
+                >
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Update Message
+                </Button>
               </div>
             </div>
-            <Button type="submit">Save</Button>
-          </form>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

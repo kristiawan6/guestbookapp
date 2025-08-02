@@ -13,6 +13,14 @@ import {
   Share2,
   Trash2,
   Upload,
+  User,
+  Phone,
+  MapPin,
+  Users,
+  Calendar,
+  Hash,
+  FileText,
+  Sparkles,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useCallback, useEffect, useState } from "react";
@@ -33,6 +41,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -106,6 +116,8 @@ export default function GuestPage() {
   const [isTemplatePopupOpen, setIsTemplatePopupOpen] = useState(false);
   const [templateType, setTemplateType] = useState<"WhatsApp" | "Email">("WhatsApp");
   const [isQRCardGeneratorOpen, setIsQRCardGeneratorOpen] = useState(false);
+  const [isIndividualEmailTemplateOpen, setIsIndividualEmailTemplateOpen] = useState(false);
+  const [individualEmailGuest, setIndividualEmailGuest] = useState<Guest | null>(null);
 
   const fetchGuests = useCallback(() => {
     if (selectedEventId) {
@@ -216,9 +228,20 @@ export default function GuestPage() {
     setIsQRCardGeneratorOpen(true);
   };
 
+  // Individual guest email handler
+  const handleSendIndividualEmail = async (guest: any) => {
+    if (!guest.email) {
+      Swal.fire("No Email", "This guest doesn't have an email address.", "warning");
+      return;
+    }
+
+    // Open template selection popup for individual email
+    setIndividualEmailGuest(guest);
+    setTemplateType("Email");
+    setIsIndividualEmailTemplateOpen(true);
+  };
+
   const handleTemplateSelect = async (template: any) => {
-    // Here you would implement the actual sending logic
-    // For now, we'll just show a success message
     try {
       const response = await fetch('/api/guests/send-bulk', {
         method: 'POST',
@@ -247,6 +270,52 @@ export default function GuestPage() {
       Swal.fire(
         "Error!", 
         `Failed to send ${templateType} messages. Please try again.`, 
+        "error"
+      );
+    }
+  };
+
+  const handleIndividualTemplateSelect = async (template: any) => {
+    if (!individualEmailGuest) return;
+
+    try {
+      // Use the dedicated send-email endpoint for individual emails
+      const response = await fetch('/api/guests/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          guestIds: [individualEmailGuest.id],
+          subject: template.subject || 'Event Invitation',
+          message: template.content || 'You are invited to our event!',
+          templateImageUrl: template.imageAttachment || '',
+          eventId: selectedEventId,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          Swal.fire(
+            "Email Sent!", 
+            `Email successfully sent to ${individualEmailGuest.email}`, 
+            "success"
+          );
+        } else {
+          throw new Error(result.errors?.[0]?.error || 'Failed to send email');
+        }
+        setIsIndividualEmailTemplateOpen(false);
+        setIndividualEmailGuest(null);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send email');
+      }
+    } catch (error) {
+      console.error('Individual email error:', error);
+      Swal.fire(
+        "Error!", 
+        `Failed to send email: ${error instanceof Error ? error.message : 'Unknown error'}`, 
         "error"
       );
     }
@@ -365,171 +434,232 @@ export default function GuestPage() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Guests</h1>
         </div>
-        <div className="grid grid-cols-2 gap-6 mb-6">
-          <div className="bg-white p-4 rounded-lg shadow flex flex-col">
-            <h2 className="text-lg font-semibold mb-4">
-              Total Attendance from {meta?.total} Guests
-            </h2>
-            <div className="flex justify-around items-center flex-grow">
-              <div className="text-center">
-                <ResponsiveContainer width={100} height={100}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {/* Attendance Overview Card */}
+          <div className="bg-white border-0 shadow-lg rounded-xl p-6 hover:shadow-xl transition-shadow duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Attendance Overview</h3>
+              <div className="text-sm text-gray-500">Total: {meta?.total || 0} Guests</div>
+            </div>
+            
+            <div className="flex items-center space-x-6">
+              <div className="relative">
+                <ResponsiveContainer width={120} height={120}>
                   <PieChart>
                     <Pie
-                      data={[{ value: 303 }, { value: 19 }]}
+                      data={[
+                        { name: "Present", value: 303, color: "#10b981" },
+                        { name: "Virtual", value: 0, color: "#3b82f6" },
+                        { name: "Absent", value: 19, color: "#ef4444" }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={35}
+                      outerRadius={55}
+                      paddingAngle={3}
                       dataKey="value"
-                      innerRadius={30}
-                      outerRadius={40}
-                      startAngle={90}
-                      endAngle={-270}
-                      paddingAngle={5}
-                      cornerRadius={5}
                     >
+                      <Cell fill="#10b981" />
                       <Cell fill="#3b82f6" />
                       <Cell fill="#ef4444" />
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
-                <p>303 Presence</p>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-gray-900">322</div>
+                    <div className="text-xs text-gray-500">Total</div>
+                  </div>
+                </div>
               </div>
-              <div className="text-center">
-                <ResponsiveContainer width={100} height={100}>
+              
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-emerald-500 rounded-full mr-3"></div>
+                    <span className="text-sm font-medium text-gray-700">Present</span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900">303</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
+                    <span className="text-sm font-medium text-gray-700">Virtual</span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900">0</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
+                    <span className="text-sm font-medium text-gray-700">Absent</span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900">19</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* RSVP Status Card */}
+          <div className="bg-white border-0 shadow-lg rounded-xl p-6 hover:shadow-xl transition-shadow duration-300">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">RSVP Status</h3>
+              <div className="text-sm text-gray-500">Response Rate: 85%</div>
+            </div>
+            
+            <div className="flex items-center space-x-6">
+              <div className="relative">
+                <ResponsiveContainer width={120} height={120}>
                   <PieChart>
                     <Pie
-                      data={[{ value: 0 }, { value: 100 }]}
+                      data={[
+                        { name: "Going", value: 269, color: "#10b981" },
+                        { name: "Not Going", value: 0, color: "#ef4444" },
+                        { name: "Virtual Attendance", value: 0, color: "#8b5cf6" },
+                        { name: "Not Submit", value: 53, color: "#e5e7eb" },
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={35}
+                      outerRadius={55}
+                      paddingAngle={3}
                       dataKey="value"
-                      innerRadius={30}
-                      outerRadius={40}
-                      startAngle={90}
-                      endAngle={-270}
-                      paddingAngle={5}
-                      cornerRadius={5}
                     >
+                      <Cell fill="#10b981" />
+                      <Cell fill="#ef4444" />
                       <Cell fill="#8b5cf6" />
                       <Cell fill="#e5e7eb" />
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
-                <p>0 Virtual Attendance</p>
               </div>
-              <div className="text-center">
-                <ResponsiveContainer width={100} height={100}>
-                  <PieChart>
-                    <Pie
-                      data={[{ value: 19 }, { value: 303 }]}
-                      dataKey="value"
-                      innerRadius={30}
-                      outerRadius={40}
-                      startAngle={90}
-                      endAngle={-270}
-                      paddingAngle={5}
-                      cornerRadius={5}
-                    >
-                      <Cell fill="#ef4444" />
-                      <Cell fill="#e5e7eb" />
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                <p>19 Not Presence</p>
+              
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-emerald-500 rounded-full mr-3"></div>
+                    <span className="text-sm font-medium text-gray-700">Confirmed</span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900">269</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
+                    <span className="text-sm font-medium text-gray-700">Declined</span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900">0</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-purple-500 rounded-full mr-3"></div>
+                    <span className="text-sm font-medium text-gray-700">Virtual Only</span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900">0</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-3 h-3 bg-gray-300 rounded-full mr-3"></div>
+                    <span className="text-sm font-medium text-gray-700">No Response</span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900">53</span>
+                </div>
               </div>
             </div>
           </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-lg font-semibold mb-4">RSVP</h2>
-            <div className="flex justify-center">
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: "Going", value: 269 },
-                      { name: "Not Going", value: 0 },
-                      { name: "Virtual Attendance", value: 0 },
-                      { name: "Not Submit", value: 53 },
-                    ]}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    fill="#8884d8"
+        </div>
+        {/* Action Bar */}
+        <div className="bg-white border-0 shadow-lg rounded-xl p-6 mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex flex-wrap gap-3">
+              <Button 
+                disabled={isLoading}
+                onClick={() => {
+                  if (guestCategories.length === 0) {
+                    Swal.fire({
+                      icon: "error",
+                      title: "No Guest Category",
+                      text: "Please create a guest category first before adding a guest.",
+                    });
+                  } else {
+                    setSelectedGuest(null);
+                    setIsDialogOpen(true);
+                  }
+                }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md"
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add Guest
+              </Button>
+              <ImportDialog
+                onImport={handleImport}
+                onDownloadTemplate={handleDownloadTemplate}
+              />
+              <Button 
+                variant="outline" 
+                onClick={handleExport}
+                className="border-gray-300 hover:bg-gray-50"
+              >
+                <Upload className="mr-2 h-4 w-4" /> Export
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="outline"
+                    disabled={selectedGuests.length === 0}
+                    className="border-gray-300 hover:bg-gray-50 disabled:opacity-50"
                   >
-                    <Cell fill="#3b82f6" />
-                    <Cell fill="#ef4444" />
-                    <Cell fill="#8b5cf6" />
-                    <Cell fill="#e5e7eb" />
-                  </Pie>
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+                    Bulk Actions ({selectedGuests.length}) <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-48">
+                  <DropdownMenuItem>
+                    <Printer className="mr-2 h-4 w-4" /> Print Labels
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleQRCardGeneration}>
+                    <QrCode className="mr-2 h-4 w-4" /> Print QR Codes
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleBulkWhatsApp}>
+                    <MessageSquare className="mr-2 h-4 w-4" /> Send WhatsApp
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleBulkEmail}>
+                    <Mail className="mr-2 h-4 w-4" /> Send Email
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleBulkDelete} className="text-red-600">
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete Selected
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <Input
+                placeholder="Search guests by name, email, or phone..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-80 border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+              />
+              {selectedGuests.length > 0 && (
+                <div className="text-sm text-gray-600 whitespace-nowrap">
+                  {selectedGuests.length} selected
+                </div>
+              )}
+              <Button variant="outline" className="border-gray-300 hover:bg-gray-50">
+                <Printer className="mr-2 h-4 w-4" /> Print
+              </Button>
             </div>
           </div>
         </div>
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-2">
-            <Button
-              className="mr-2"
-              disabled={isLoading}
-              onClick={() => {
-                if (guestCategories.length === 0) {
-                  Swal.fire({
-                    icon: "error",
-                    title: "No Guest Category",
-                    text: "Please create a guest category first before adding a guest.",
-                  });
-                } else {
-                  setSelectedGuest(null);
-                  setIsDialogOpen(true);
-                }
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add
-            </Button>
-            <ImportDialog
-              onImport={handleImport}
-              onDownloadTemplate={handleDownloadTemplate}
-            />
-            <Button variant="outline" className="mr-2" onClick={handleExport}>
-              <Upload className="mr-2 h-4 w-4" /> Export
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  Bulk Action <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem>
-                  <Printer className="mr-2 h-4 w-4" /> Print Label
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleQRCardGeneration}>
-                  <QrCode className="mr-2 h-4 w-4" /> Print QRCode
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleBulkWhatsApp}>
-                  <MessageSquare className="mr-2 h-4 w-4" /> Send Whatsapp
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleBulkEmail}>
-                  <Mail className="mr-2 h-4 w-4" /> Send Email
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleBulkDelete}>
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+        {/* Main Table Card */}
+        <div className="bg-white border-0 shadow-lg rounded-xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Guest Records</h3>
+              <div className="text-sm text-gray-500">
+                Showing {guests.length} of {meta?.total || 0} guests
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="Search..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-80"
-            />
-            <Button variant="outline">
-              <Printer className="mr-2 h-4 w-4" /> Print
-            </Button>
-          </div>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow overflow-x-auto">
-          <Table>
-            <TableHeader>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className="bg-gray-50/50">
               <TableRow>
                 <TableHead colSpan={7} className="text-center">
                   Data Guest
@@ -538,392 +668,421 @@ export default function GuestPage() {
                   Guestbook & Web Invitation
                 </TableHead>
               </TableRow>
-              <TableRow>
-                <TableHead></TableHead>
-                <TableHead>
-                  <Input placeholder="Search..." className="w-32" />
-                </TableHead>
-                <TableHead>
-                  <Input placeholder="Search..." className="w-32" />
-                </TableHead>
-                <TableHead>
-                  <Input placeholder="Search..." className="w-32" />
-                </TableHead>
-                <TableHead>
-                  <Input placeholder="Search..." className="w-32" />
-                </TableHead>
-                <TableHead>
-                  <Input placeholder="Search..." className="w-32" />
-                </TableHead>
-                <TableHead>
-                  <Input placeholder="Search..." className="w-32" />
-                </TableHead>
-                <TableHead>
-                  <Input placeholder="Search..." className="w-32" />
-                </TableHead>
-                <TableHead>
-                  <Input placeholder="Search..." className="w-32" />
-                </TableHead>
-                <TableHead>
-                  <Input placeholder="Search..." className="w-32" />
-                </TableHead>
-                <TableHead>
-                  <Input placeholder="Search..." className="w-32" />
-                </TableHead>
-                <TableHead>
-                  <Input placeholder="Search..." className="w-32" />
-                </TableHead>
-                <TableHead>
-                  <Input placeholder="Search..." className="w-32" />
-                </TableHead>
-                <TableHead>
-                  <Input placeholder="Search..." className="w-32" />
-                </TableHead>
-                <TableHead>
-                  <Input placeholder="Search..." className="w-32" />
-                </TableHead>
-                <TableHead>
-                  <Input placeholder="Search..." className="w-32" />
-                </TableHead>
-                <TableHead>
-                  <Input placeholder="Search..." className="w-32" />
-                </TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-              <TableRow>
-                <TableHead className="p-4 text-center">
-                  <Checkbox
-                    checked={
-                      guests.length > 0 &&
-                      selectedGuests.length === guests.length
-                    }
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedGuests(guests.map((g) => g.id));
-                      } else {
-                        setSelectedGuests([]);
-                      }
-                    }}
-                  />
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("name")}>
-                    Fullname
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("guestCategoryId")}
-                  >
-                    Category
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("phoneNumber")}
-                  >
-                    Telephone
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("email")}>
-                    Email
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("address")}>
-                    Address / Institution
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("notes")}>
-                    Notes
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>Created at</TableHead>
-                <TableHead>Created by</TableHead>
-                <TableHead>Date of Arrival</TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("numberOfGuests")}
-                  >
-                    Number of Guest
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button variant="ghost" onClick={() => handleSort("session")}>
-                    Session
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("tableNumber")}
-                  >
-                    Table no
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>Signature</TableHead>
-                <TableHead>Status (WA)</TableHead>
-                <TableHead>Status (Email)</TableHead>
-                <TableHead>Status on website</TableHead>
-                <TableHead className="text-center">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {guests.map((guest) => (
-                <TableRow key={guest.id}>
-                  <TableCell className="p-4 text-center">
+
+                <TableRow className="border-b border-gray-200">
+                  <TableHead className="w-12 text-center py-4">
                     <Checkbox
-                      checked={selectedGuests.includes(guest.id)}
+                      checked={
+                        guests.length > 0 &&
+                        selectedGuests.length === guests.length
+                      }
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          setSelectedGuests([...selectedGuests, guest.id]);
+                          setSelectedGuests(guests.map((g) => g.id));
                         } else {
-                          setSelectedGuests(
-                            selectedGuests.filter((id) => id !== guest.id)
-                          );
+                          setSelectedGuests([]);
                         }
                       }}
+                      className="border-gray-400"
                     />
-                  </TableCell>
-                  <TableCell>
-                    <button
-                      className="text-blue-500 hover:underline"
-                      onClick={() => handleEdit(guest)}
-                    >
-                      {guest.name}
-                    </button>
-                  </TableCell>
-                  <TableCell>
-                    {
-                      guestCategories.find(
-                        (c) => c.id === guest.guestCategoryId
-                      )?.name
-                    }
-                  </TableCell>
-                  <TableCell>{guest.phoneNumber}</TableCell>
-                  <TableCell>{guest.email}</TableCell>
-                  <TableCell>{guest.address}</TableCell>
-                  <TableCell>{guest.notes}</TableCell>
-                  <TableCell>2024-07-06</TableCell>
-                  <TableCell>Admin</TableCell>
-                  <TableCell>2024-07-06</TableCell>
-                  <TableCell>{guest.numberOfGuests}</TableCell>
-                  <TableCell>{guest.session}</TableCell>
-                  <TableCell>{guest.tableNumber}</TableCell>
-                  <TableCell>Signed</TableCell>
-                  <TableCell>Sent</TableCell>
-                  <TableCell>Sent</TableCell>
-                  <TableCell>Viewed</TableCell>
-                  <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mr-2"
-                      onClick={() => handleEdit(guest)}
-                    >
-                      <Pencil className="mr-2 h-4 w-4" /> Edit
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-700 py-4">
+                    <Button variant="ghost" onClick={() => handleSort("name")} className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900">
+                      Full Name
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-700 py-4">
                     <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(guest.id)}
+                      variant="ghost"
+                      onClick={() => handleSort("guestCategoryId")}
+                      className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900"
                     >
-                      <Trash2 className="mr-2 h-4 w-4" /> Delete
+                      Category
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
-                  </TableCell>
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-700 py-4">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("phoneNumber")}
+                      className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900"
+                    >
+                      Phone Number
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-700 py-4">
+                    <Button variant="ghost" onClick={() => handleSort("email")} className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900">
+                      Email Address
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-700 py-4">
+                    <Button variant="ghost" onClick={() => handleSort("address")} className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900">
+                      Address / Institution
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-700 py-4">
+                    <Button variant="ghost" onClick={() => handleSort("notes")} className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900">
+                      Notes
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-700 py-4">Created Date</TableHead>
+                  <TableHead className="font-semibold text-gray-700 py-4">Created By</TableHead>
+                  <TableHead className="font-semibold text-gray-700 py-4">Arrival Date</TableHead>
+                  <TableHead className="font-semibold text-gray-700 py-4">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("numberOfGuests")}
+                      className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900"
+                    >
+                      Guest Count
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-700 py-4">
+                    <Button variant="ghost" onClick={() => handleSort("session")} className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900">
+                      Session
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-700 py-4">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("tableNumber")}
+                      className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900"
+                    >
+                      Table No.
+                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-700 py-4">Signature</TableHead>
+                  <TableHead className="font-semibold text-gray-700 py-4">WhatsApp Status</TableHead>
+                  <TableHead className="font-semibold text-gray-700 py-4">Email Status</TableHead>
+                  <TableHead className="font-semibold text-gray-700 py-4">Website Status</TableHead>
+                  <TableHead className="text-center font-semibold text-gray-700 py-4">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          <div className="flex justify-end items-center gap-2 mt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(page - 1)}
-              disabled={page === 1}
-            >
-              Previous
-            </Button>
-            <span>
-              Page {page} of {meta?.totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage(page + 1)}
-              disabled={page === meta?.totalPages}
-            >
-              Next
-            </Button>
+            </TableHeader>
+              <TableBody>
+                {guests.map((guest, index) => (
+                  <TableRow key={guest.id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
+                    <TableCell className="text-center py-4">
+                      <Checkbox
+                        checked={selectedGuests.includes(guest.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedGuests([...selectedGuests, guest.id]);
+                          } else {
+                            setSelectedGuests(
+                              selectedGuests.filter((id) => id !== guest.id)
+                            );
+                          }
+                        }}
+                        className="border-gray-400"
+                      />
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <button
+                        className="font-medium text-emerald-600 hover:text-emerald-800 hover:underline transition-colors"
+                        onClick={() => handleEdit(guest)}
+                      >
+                        {guest.name}
+                      </button>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {
+                          guestCategories.find(
+                            (c) => c.id === guest.guestCategoryId
+                          )?.name || 'N/A'
+                        }
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-4 text-gray-700">{guest.phoneNumber || '-'}</TableCell>
+                    <TableCell className="py-4 text-gray-700">{guest.email || '-'}</TableCell>
+                    <TableCell className="py-4 text-gray-700 max-w-xs truncate">{guest.address || '-'}</TableCell>
+                    <TableCell className="py-4 text-gray-700 max-w-xs truncate">{guest.notes || '-'}</TableCell>
+                    <TableCell className="py-4 text-gray-600 text-sm">2024-07-06</TableCell>
+                    <TableCell className="py-4 text-gray-600 text-sm">Admin</TableCell>
+                    <TableCell className="py-4 text-gray-600 text-sm">2024-07-06</TableCell>
+                    <TableCell className="py-4">
+                      <span className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-800">
+                        {guest.numberOfGuests}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-4 text-gray-700">{guest.session || '-'}</TableCell>
+                    <TableCell className="py-4 text-gray-700">{guest.tableNumber || '-'}</TableCell>
+                    <TableCell className="py-4">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Signed
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Sent
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Sent
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        Viewed
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(guest)}
+                          className="h-8 px-3 text-xs border-gray-300 hover:bg-gray-50"
+                        >
+                          <Pencil className="h-3 w-3 mr-1" /> Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(guest.id)}
+                          className="h-8 px-3 text-xs border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" /> Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
+          
+          {/* Pagination */}
+          {meta && meta.totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-700">
+                  Showing {((meta.page - 1) * meta.limit) + 1} to {Math.min(meta.page * meta.limit, meta.total)} of {meta.total} results
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(Math.max(1, page - 1))}
+                    disabled={page <= 1}
+                    className="border-gray-300"
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-sm text-gray-600">
+                    Page {meta.page} of {meta.totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage(Math.min(meta.totalPages, page + 1))}
+                    disabled={page >= meta.totalPages}
+                    className="border-gray-300"
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedGuest ? "Edit Guest" : "Add Guest"}
-            </DialogTitle>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 -m-6 mb-6 rounded-t-lg">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-lg">
+                {selectedGuest ? <Pencil className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-semibold text-white">
+                  {selectedGuest ? "Edit Guest" : "Add New Guest"}
+                </DialogTitle>
+                <p className="text-blue-100 text-sm mt-1">
+                  {selectedGuest ? "Update guest information and settings" : "Create a new guest profile with all necessary details"}
+                </p>
+              </div>
+            </div>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className={selectedGuest ? "col-span-1" : "md:col-span-2"}>
-              <form id="guest-form" onSubmit={handleAddGuest}>
-                <Accordion type="multiple" defaultValue={["item-1"]}>
-                  <AccordionItem value="item-1">
-                    <AccordionTrigger>General</AccordionTrigger>
-                    <AccordionContent>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="name" className="text-left" required>
-                            Fullname
-                          </Label>
-                          <Input
-                            id="name"
-                            name="name"
-                            defaultValue={selectedGuest?.name}
-                            className="col-span-3"
-                          />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label
-                            htmlFor="guestCategoryId"
-                            className="text-left"
-                            required
-                          >
-                            Category
-                          </Label>
-                          <Select
-                            name="guestCategoryId"
-                            defaultValue={selectedGuest?.guestCategoryId}
-                          >
-                            <SelectTrigger className="col-span-3">
-                              <SelectValue placeholder="Select a category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {guestCategories.map((category) => (
-                                <SelectItem
-                                  key={category.id}
-                                  value={category.id}
-                                >
-                                  {category.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="phoneNumber" className="text-left">
-                            Telephone
-                          </Label>
-                          <Input
-                            id="phoneNumber"
-                            name="phoneNumber"
-                            defaultValue={selectedGuest?.phoneNumber}
-                            className="col-span-3"
-                          />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="email" className="text-left">
-                            Email
-                          </Label>
-                          <Input
-                            id="email"
-                            name="email"
-                            defaultValue={selectedGuest?.email}
-                            className="col-span-3"
-                          />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="address" className="text-left">
-                            Address
-                          </Label>
-                          <Textarea
-                            id="address"
-                            name="address"
-                            defaultValue={selectedGuest?.address}
-                            className="col-span-3"
-                          />
-                        </div>
+              <form id="guest-form" onSubmit={handleAddGuest} className="space-y-6">
+                {/* Personal Information Card */}
+                <Card className="border-l-4 border-l-blue-500 shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <User className="h-5 w-5 text-blue-600" />
+                      Personal Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name" className="flex items-center gap-2 font-medium">
+                          <User className="h-4 w-4 text-gray-500" />
+                          Full Name *
+                        </Label>
+                        <Input
+                          id="name"
+                          name="name"
+                          defaultValue={selectedGuest?.name}
+                          placeholder="Enter full name"
+                          className="focus:ring-2 focus:ring-blue-500"
+                        />
                       </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                  <AccordionItem value="item-2">
-                    <AccordionTrigger>Event</AccordionTrigger>
-                    <AccordionContent>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label
-                            htmlFor="numberOfGuests"
-                            className="text-left"
-                          >
-                            Number of Guests
-                          </Label>
-                          <Input
-                            id="numberOfGuests"
-                            name="numberOfGuests"
-                            type="number"
-                            defaultValue={selectedGuest?.numberOfGuests}
-                            className="col-span-3"
-                          />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="session" className="text-left">
-                            Session
-                          </Label>
-                          <Input
-                            id="session"
-                            name="session"
-                            defaultValue={selectedGuest?.session}
-                            className="col-span-3"
-                          />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="tableNumber" className="text-left">
-                            Table No.
-                          </Label>
-                          <Input
-                            id="tableNumber"
-                            name="tableNumber"
-                            defaultValue={selectedGuest?.tableNumber}
-                            className="col-span-3"
-                          />
-                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="guestCategoryId" className="flex items-center gap-2 font-medium">
+                          <Hash className="h-4 w-4 text-gray-500" />
+                          Category *
+                        </Label>
+                        <Select
+                          name="guestCategoryId"
+                          defaultValue={selectedGuest?.guestCategoryId}
+                        >
+                          <SelectTrigger className="focus:ring-2 focus:ring-blue-500">
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {guestCategories.map((category) => (
+                              <SelectItem key={category.id} value={category.id}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                  <AccordionItem value="item-3">
-                    <AccordionTrigger>Other</AccordionTrigger>
-                    <AccordionContent>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="notes" className="text-left">
-                            Notes
-                          </Label>
-                          <Textarea
-                            id="notes"
-                            name="notes"
-                            defaultValue={selectedGuest?.notes}
-                            className="col-span-3"
-                          />
-                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="phoneNumber" className="flex items-center gap-2 font-medium">
+                          <Phone className="h-4 w-4 text-gray-500" />
+                          Phone Number
+                        </Label>
+                        <Input
+                          id="phoneNumber"
+                          name="phoneNumber"
+                          defaultValue={selectedGuest?.phoneNumber}
+                          placeholder="Enter phone number"
+                          className="focus:ring-2 focus:ring-blue-500"
+                        />
                       </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
+                      <div className="space-y-2">
+                        <Label htmlFor="email" className="flex items-center gap-2 font-medium">
+                          <Mail className="h-4 w-4 text-gray-500" />
+                          Email Address
+                        </Label>
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          defaultValue={selectedGuest?.email}
+                          placeholder="Enter email address"
+                          className="focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="address" className="flex items-center gap-2 font-medium">
+                        <MapPin className="h-4 w-4 text-gray-500" />
+                        Address
+                      </Label>
+                      <Textarea
+                        id="address"
+                        name="address"
+                        defaultValue={selectedGuest?.address}
+                        placeholder="Enter full address"
+                        className="focus:ring-2 focus:ring-blue-500 min-h-[80px]"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+                {/* Event Details Card */}
+                <Card className="border-l-4 border-l-green-500 shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Calendar className="h-5 w-5 text-green-600" />
+                      Event Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="numberOfGuests" className="flex items-center gap-2 font-medium">
+                          <Users className="h-4 w-4 text-gray-500" />
+                          Number of Guests
+                        </Label>
+                        <Input
+                          id="numberOfGuests"
+                          name="numberOfGuests"
+                          type="number"
+                          min="1"
+                          defaultValue={selectedGuest?.numberOfGuests}
+                          placeholder="1"
+                          className="focus:ring-2 focus:ring-green-500"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="session" className="flex items-center gap-2 font-medium">
+                          <Calendar className="h-4 w-4 text-gray-500" />
+                          Session
+                        </Label>
+                        <Input
+                          id="session"
+                          name="session"
+                          defaultValue={selectedGuest?.session}
+                          placeholder="Enter session"
+                          className="focus:ring-2 focus:ring-green-500"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="tableNumber" className="flex items-center gap-2 font-medium">
+                          <Hash className="h-4 w-4 text-gray-500" />
+                          Table Number
+                        </Label>
+                        <Input
+                          id="tableNumber"
+                          name="tableNumber"
+                          defaultValue={selectedGuest?.tableNumber}
+                          placeholder="Table #"
+                          className="focus:ring-2 focus:ring-green-500"
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                {/* Additional Notes Card */}
+                <Card className="border-l-4 border-l-purple-500 shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <FileText className="h-5 w-5 text-purple-600" />
+                      Additional Notes
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <Label htmlFor="notes" className="flex items-center gap-2 font-medium">
+                        <FileText className="h-4 w-4 text-gray-500" />
+                        Notes & Comments
+                      </Label>
+                      <Textarea
+                        id="notes"
+                        name="notes"
+                        defaultValue={selectedGuest?.notes}
+                        placeholder="Add any additional notes or comments about this guest..."
+                        className="focus:ring-2 focus:ring-purple-500 min-h-[100px]"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
               </form>
             </div>
             {selectedGuest && (
@@ -980,7 +1139,10 @@ export default function GuestPage() {
                           <MessageSquare className="mr-2 h-4 w-4" /> Send by
                           Whatsapp
                         </Button>
-                        <Button variant="outline">
+                        <Button 
+                          variant="outline"
+                          onClick={() => selectedGuest && handleSendIndividualEmail(selectedGuest)}
+                        >
                           <Mail className="mr-2 h-4 w-4" /> Send by Email
                         </Button>
                       </div>
@@ -993,29 +1155,63 @@ export default function GuestPage() {
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsDialogOpen(false)}
-            >
-              Close
-            </Button>
-            <Button type="submit" form="guest-form">
-              <Pencil className="mr-2 h-4 w-4" />
-              {selectedGuest ? "Update" : "Save"}
-            </Button>
+          <DialogFooter className="bg-gray-50 px-6 py-4 -mx-6 -mb-6 mt-6 rounded-b-lg border-t">
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Sparkles className="h-4 w-4" />
+                <span>All fields marked with * are required</span>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                  className="border-gray-300 hover:bg-gray-50"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  form="guest-form"
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
+                >
+                  {selectedGuest ? (
+                    <>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Update Guest
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Guest
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
-      {/* Template Selection Popup */}
+      {/* Template Selection Popup for Bulk Actions */}
       <TemplateSelectionPopup
         isOpen={isTemplatePopupOpen}
         onClose={() => setIsTemplatePopupOpen(false)}
         onSelectTemplate={handleTemplateSelect}
         type={templateType}
         selectedGuestIds={selectedGuests}
+      />
+      
+      {/* Template Selection Popup for Individual Email */}
+      <TemplateSelectionPopup
+        isOpen={isIndividualEmailTemplateOpen}
+        onClose={() => {
+          setIsIndividualEmailTemplateOpen(false);
+          setIndividualEmailGuest(null);
+        }}
+        onSelectTemplate={handleIndividualTemplateSelect}
+        type="Email"
+        selectedGuestIds={individualEmailGuest ? [individualEmailGuest.id] : []}
       />
       
       {/* QR Card Generator */}

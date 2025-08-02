@@ -27,6 +27,7 @@ export const broadcastTemplateSchema = z.object({
   button: z.string().optional(),
   imageAttachment: z.string().optional(),
   imageAttachmentType: z.string().optional(),
+  coordinateFields: z.string().optional(),
 });
 
 export const claimableItemSchema = z.object({

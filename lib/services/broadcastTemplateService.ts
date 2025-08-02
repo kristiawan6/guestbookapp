@@ -23,6 +23,7 @@ interface BroadcastTemplateData {
   button?: string;
   imageAttachment?: string;
   imageAttachmentType?: string;
+  coordinateFields?: string;
 }
 
 export const createBroadcastTemplate = async (
@@ -39,6 +40,7 @@ export const createBroadcastTemplate = async (
     button,
     imageAttachment,
     imageAttachmentType,
+    coordinateFields,
   } = data;
 
   if (!name || !type || !content) {
@@ -60,6 +62,7 @@ export const createBroadcastTemplate = async (
       button,
       imageAttachment,
       imageAttachmentType,
+      coordinateFields,
       event: {
         connect: {
           id: eventId,
@@ -108,8 +111,14 @@ export const getBroadcastTemplates = async (
     prisma.broadcastTemplate.count({ where }),
   ]);
 
+  // Map footerMessage back to footer for frontend compatibility
+  const templatesForFrontend = broadcastTemplates.map(template => ({
+    ...template,
+    footer: template.footerMessage,
+  }));
+
   return {
-    data: broadcastTemplates,
+    data: templatesForFrontend,
     meta: {
       page,
       limit,
@@ -145,6 +154,7 @@ export const updateBroadcastTemplate = async (
     button,
     imageAttachment,
     imageAttachmentType,
+    coordinateFields,
   } = data;
 
   const dataToUpdate: {
@@ -155,6 +165,7 @@ export const updateBroadcastTemplate = async (
     button?: string;
     imageAttachment?: string;
     imageAttachmentType?: string;
+    coordinateFields?: string;
     type?: BroadcastType;
   } = {
     name,
@@ -164,6 +175,7 @@ export const updateBroadcastTemplate = async (
     button,
     imageAttachment,
     imageAttachmentType,
+    coordinateFields,
   };
 
   if (type) {

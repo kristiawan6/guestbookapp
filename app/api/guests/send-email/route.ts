@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmailWithQRCard } from '@/lib/services/emailService';
 import { imageProcessingService } from '../../../../src/services/imageProcessingService';
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/lib/prisma';
 import { writeFile, mkdir, readFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
-
-const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
@@ -85,9 +83,30 @@ export async function POST(request: NextRequest) {
         }
 
         // Read the blank template image
-        const templateResponse = await fetch(templateImageUrl);
-        const templateArrayBuffer = await templateResponse.arrayBuffer();
-        const blankTemplateBuffer = Buffer.from(templateArrayBuffer);
+        let blankTemplateBuffer;
+        try {
+          if (templateImageUrl.startsWith('/')) {
+            // Handle local file path
+            const templatePath = join(process.cwd(), 'public', templateImageUrl);
+            console.log('Reading template from path:', templatePath);
+            blankTemplateBuffer = await readFile(templatePath);
+          } else {
+            // Handle external URL
+            console.log('Fetching template from URL:', templateImageUrl);
+            const templateResponse = await fetch(templateImageUrl);
+            const templateArrayBuffer = await templateResponse.arrayBuffer();
+            blankTemplateBuffer = Buffer.from(templateArrayBuffer);
+          }
+          console.log('Template buffer size:', blankTemplateBuffer.length);
+        } catch (templateError) {
+          console.error('Error reading template:', templateError);
+          errors.push({
+            guestId: guest.id,
+            guestName: guest.name,
+            error: `Failed to read template: ${templateError instanceof Error ? templateError.message : String(templateError)}`
+          });
+          continue;
+        }
 
         // Process QR template with guest data
         const processedImageBuffer = await imageProcessingService.processQRCodeTemplate({
@@ -107,7 +126,19 @@ export async function POST(request: NextRequest) {
             eventId: eventId || '',
             guestCategoryId: null
           },
-          blankTemplateBuffer
+          blankTemplateBuffer,
+          qrCodePosition: {
+            x: 200,
+            y: 450,
+            width: 180,
+            height: 180
+          },
+          namePosition: {
+            x: 200,
+            y: 650,
+            fontSize: 24,
+            fontColor: '#000000'
+          }
         });
 
         // Save the processed image

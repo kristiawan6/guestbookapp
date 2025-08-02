@@ -114,6 +114,22 @@ export const getAllGuests = async (eventId: string) => {
   return guests;
 };
 
+export const getGuestById = async (id: string) => {
+  const guest = await prisma.guest.findUnique({
+    where: { id },
+    include: {
+      event: true,
+      guestCategory: true,
+    },
+  });
+  
+  if (!guest) {
+    throw new Error("Guest not found");
+  }
+  
+  return guest;
+};
+
 export const updateGuest = async (id: string, data: Partial<GuestData>) => {
   const {
     name,

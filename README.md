@@ -1,6 +1,6 @@
 # Guestbook App
 
-![Guestbook App](public/logo.svg)
+![Guestbook App](public/guestly_logo.svg)
 
 A modern, full-stack guestbook application built with Next.js, Prisma, and Tailwind CSS. This application allows event organizers to manage guests, send broadcast messages, and track attendance.
 

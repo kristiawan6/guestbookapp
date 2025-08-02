@@ -82,10 +82,17 @@ export async function POST(
       eventId,
       validation.data
     );
+    
+    // Map footerMessage back to footer for frontend compatibility
+    const templateForFrontend = {
+      ...broadcastTemplate,
+      footer: broadcastTemplate.footerMessage,
+    };
+    
     return apiResponse(
       "success",
       "Broadcast template created successfully",
-      broadcastTemplate,
+      templateForFrontend,
       null,
       null,
       201

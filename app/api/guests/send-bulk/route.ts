@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import prisma from "@/lib/prisma";
 import { sendWhatsAppMessage } from "@/lib/services/whatsappService";
-import { sendEmail } from "@/lib/services/emailService";
+import { sendEmail, sendEmailWithQRCard } from "@/lib/services/emailService";
+import { imageProcessingService } from "../../../../src/services/imageProcessingService";
+import { writeFile, mkdir, readFile } from "fs/promises";
+import { join } from "path";
+import { existsSync } from "fs";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
 
@@ -49,6 +53,7 @@ export async function POST(req: NextRequest) {
         name: true,
         email: true,
         phoneNumber: true,
+        qrCode: true,
       },
     });
 
@@ -86,6 +91,12 @@ export async function POST(req: NextRequest) {
         }
       }
     } else if (type === "Email") {
+      // Ensure the QR cards directory exists
+      const qrCardsDir = join(process.cwd(), 'public', 'qr-cards');
+      if (!existsSync(qrCardsDir)) {
+        await mkdir(qrCardsDir, { recursive: true });
+      }
+
       for (const guest of guests) {
         if (guest.email) {
           try {
@@ -99,7 +110,141 @@ export async function POST(req: NextRequest) {
               guest.name
             ) || template.name;
             
-            await sendEmail(guest.email, personalizedSubject, personalizedContent);
+            // Check if guest has QR code and template has image for QR card generation
+            if (guest.qrCode && template.imageAttachment) {
+              // Read the template image
+              let blankTemplateBuffer;
+              try {
+                if (template.imageAttachment.startsWith('/')) {
+                  // Handle local file path
+                  const templatePath = join(process.cwd(), 'public', template.imageAttachment);
+                  blankTemplateBuffer = await readFile(templatePath);
+                } else {
+                  // Handle external URL
+                  const templateResponse = await fetch(template.imageAttachment);
+                  const templateArrayBuffer = await templateResponse.arrayBuffer();
+                  blankTemplateBuffer = Buffer.from(templateArrayBuffer);
+                }
+              } catch (templateError) {
+                console.error('Error reading template:', templateError);
+                // Fallback to regular email without QR card
+                await sendEmail(guest.email, personalizedSubject, personalizedContent);
+                successCount++;
+                continue;
+              }
+
+              // Parse coordinate fields from template or use defaults
+              let coordinateConfig: any = {
+                qrCodePosition: {
+                  x: 200,
+                  y: 450,
+                  width: 180,
+                  height: 180
+                },
+                namePosition: {
+                  x: 200,
+                  y: 650,
+                  fontSize: 24,
+                  fontColor: '#000000'
+                }
+              };
+
+              let parsedCoordinateFields: any[] = [];
+              
+              if (template.coordinateFields) {
+                try {
+                  parsedCoordinateFields = JSON.parse(template.coordinateFields);
+                  
+                  // Process each coordinate field type for legacy support
+                  parsedCoordinateFields.forEach((field: any) => {
+                    switch (field.type) {
+                      case 'qr-code':
+                        coordinateConfig.qrCodePosition = {
+                          x: field.x,
+                          y: field.y,
+                          width: field.width,
+                          height: field.height
+                        };
+                        break;
+                      case 'text':
+                        // Map text fields based on fieldName
+                        if (field.fieldName === 'name') {
+                          coordinateConfig.namePosition = {
+                            x: field.x,
+                            y: field.y,
+                            fontSize: field.fontSize || 24,
+                            fontColor: '#000000'
+                          };
+                        } else if (field.fieldName === 'email') {
+                          coordinateConfig.emailPosition = {
+                            x: field.x,
+                            y: field.y,
+                            fontSize: field.fontSize || 16,
+                            fontColor: '#666666'
+                          };
+                        } else if (field.fieldName === 'eventName') {
+                          coordinateConfig.eventNamePosition = {
+                            x: field.x,
+                            y: field.y,
+                            fontSize: field.fontSize || 18,
+                            fontColor: '#333333'
+                          };
+                        } else if (field.fieldName === 'tableNumber') {
+                          coordinateConfig.tableNumberPosition = {
+                            x: field.x,
+                            y: field.y,
+                            fontSize: field.fontSize || 18,
+                            fontColor: '#000000'
+                          };
+                        }
+                        break;
+                    }
+                  });
+                } catch (parseError) {
+                  console.error('Error parsing coordinate fields, using defaults:', parseError);
+                }
+              }
+
+              // Process QR template with guest data using dynamic coordinate fields
+              const processedImageBuffer = await imageProcessingService.processQRCodeTemplateWithDynamicFields({
+                guestData: {
+                  id: guest.id,
+                  name: guest.name,
+                  email: guest.email,
+                  phoneNumber: null,
+                  address: null,
+                  numberOfGuests: null,
+                  session: null,
+                  tableNumber: null,
+                  notes: null,
+                  qrCode: guest.qrCode,
+                  invitationLink: null,
+                  status: 'Invited' as const,
+                  eventId: eventId || '',
+                  guestCategoryId: null
+                },
+                blankTemplateBuffer,
+                coordinateFields: parsedCoordinateFields
+              });
+
+              // Save the processed image
+              const filename = `qr-card-${guest.id}-${Date.now()}.png`;
+              const filepath = join(qrCardsDir, filename);
+              await writeFile(filepath, processedImageBuffer);
+
+              // Send email with QR card attachment
+              await sendEmailWithQRCard(
+                guest.email,
+                personalizedSubject,
+                personalizedContent,
+                filepath,
+                guest.name
+              );
+            } else {
+              // Send regular email without QR card
+              await sendEmail(guest.email, personalizedSubject, personalizedContent);
+            }
+            
             successCount++;
           } catch (error) {
             failureCount++;
