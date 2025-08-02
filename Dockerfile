@@ -7,6 +7,9 @@ WORKDIR /app
 # Copy package.json and package-lock.json
 COPY package*.json ./
 
+# Copy prisma directory for schema access during postinstall
+COPY prisma ./prisma
+
 # Install dependencies
 RUN npm install --legacy-peer-deps
 
