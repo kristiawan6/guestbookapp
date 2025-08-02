@@ -9,11 +9,12 @@ A modern, full-stack guestbook application built with Next.js, Prisma, and Tailw
 - **Event Management:** Create and manage multiple events.
 - **Guest Management:** Add, edit, and delete guests. Import and export guest lists from CSV files.
 - **Guest Categories:** Categorize guests for better organization.
-- **Broadcast Messaging:** Send broadcast messages to guests via WhatsApp and Email.
+- **Broadcast Messaging:** Send broadcast messages to guests via WhatsApp and Email with rich text editor support.
 - **QR Code Generation:** Generate unique QR codes for each guest for easy check-in.
 - **Souvenir Claiming:** Track souvenir claims for each event.
 - **Real-time Statistics:** View real-time statistics for each event.
 - **Authentication:** Secure authentication for event organizers and administrators.
+- **Modern UI:** Clean, responsive interface with optimized scrolling and user experience.
 
 ## Tech Stack
 
@@ -73,7 +74,7 @@ A modern, full-stack guestbook application built with Next.js, Prisma, and Tailw
    npm run dev
    ```
 
-   Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+   Open [http://localhost:3001](http://localhost:3001) with your browser to see the result.
 
 ## Contributing
 
