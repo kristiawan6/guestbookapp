@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { BroadcastType } from "@/app/generated/prisma";
+import { BroadcastType, BroadcastTemplate } from "@prisma/client";
 
 const parseBroadcastType = (type: string): BroadcastType | undefined => {
   if (!type) return undefined;
@@ -112,7 +112,7 @@ export const getBroadcastTemplates = async (
   ]);
 
   // Map footerMessage back to footer for frontend compatibility
-  const templatesForFrontend = broadcastTemplates.map(template => ({
+  const templatesForFrontend = broadcastTemplates.map((template: BroadcastTemplate) => ({
     ...template,
     footer: template.footerMessage,
   }));

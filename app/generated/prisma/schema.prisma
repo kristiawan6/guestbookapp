@@ -1,0 +1,150 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../app/generated/prisma"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String                 @id @default(cuid())
+  username         String                 @unique
+  password         String
+  role             UserRole
+  email            String                 @unique
+  isActive         Boolean                @default(true)
+  otp              String?
+  otpExpires       DateTime?
+  ClaimTransaction ClaimTransaction[]
+  events           UserEventAssociation[]
+}
+
+model Event {
+  id                 String                 @id @default(cuid())
+  name               String
+  description        String?
+  isActive           Boolean                @default(true)
+  broadcastTemplates BroadcastTemplate[]
+  claimableItems     ClaimableItem[]
+  guests             Guest[]
+  guestCategories    GuestCategory[]
+  messages           Message[]
+  users              UserEventAssociation[]
+}
+
+model UserEventAssociation {
+  userId  String
+  eventId String
+  event   Event  @relation(fields: [eventId], references: [id])
+  user    User   @relation(fields: [userId], references: [id])
+
+  @@id([userId, eventId])
+}
+
+model GuestCategory {
+  id          String  @id @default(cuid())
+  name        String
+  eventId     String
+  code        String?
+  description String?
+  isActive    Boolean @default(true)
+  quota       Int?
+  guests      Guest[]
+  event       Event   @relation(fields: [eventId], references: [id])
+
+  @@unique([code, eventId])
+}
+
+model Guest {
+  id                String             @id @default(cuid())
+  name              String
+  email             String?
+  phoneNumber       String?
+  eventId           String
+  guestCategoryId   String?
+  address           String?
+  numberOfGuests    Int?
+  session           String?
+  tableNumber       String?
+  notes             String?
+  invitationLink    String?
+  qrCode            String?            @unique
+  status            GuestStatus        @default(Invited)
+  createdAt         DateTime           @default(now())
+  isDeleted         Boolean            @default(false)
+  updatedAt         DateTime           @updatedAt
+  claimTransactions ClaimTransaction[]
+  event             Event              @relation(fields: [eventId], references: [id])
+  guestCategory     GuestCategory?     @relation(fields: [guestCategoryId], references: [id])
+  messages          Message[]
+
+  @@unique([email, eventId])
+  @@unique([phoneNumber, eventId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  timestamp DateTime @default(now())
+  approved  Boolean  @default(false)
+  guestId   String
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id])
+  guest     Guest    @relation(fields: [guestId], references: [id])
+}
+
+model BroadcastTemplate {
+  id                  String        @id @default(cuid())
+  name                String
+  type                BroadcastType
+  content             String
+  eventId             String
+  button              String?
+  footerMessage       String?
+  imageAttachment     String?
+  subject             String?
+  imageAttachmentType String?
+  coordinateFields    String?
+  event               Event         @relation(fields: [eventId], references: [id])
+}
+
+model ClaimableItem {
+  id                String             @id @default(cuid())
+  name              String
+  description       String?
+  totalQuantity     Int
+  remainingQuantity Int
+  eventId           String
+  claimTransactions ClaimTransaction[]
+  event             Event              @relation(fields: [eventId], references: [id])
+}
+
+model ClaimTransaction {
+  id              String        @id @default(cuid())
+  timestamp       DateTime      @default(now())
+  guestId         String
+  claimableItemId String
+  adminId         String
+  admin           User          @relation(fields: [adminId], references: [id])
+  claimableItem   ClaimableItem @relation(fields: [claimableItemId], references: [id])
+  guest           Guest         @relation(fields: [guestId], references: [id])
+}
+
+enum UserRole {
+  SuperAdmin
+  AdminEvents
+}
+
+enum BroadcastType {
+  WhatsApp
+  Email
+}
+
+enum GuestStatus {
+  Invited
+  Attended
+  Cancelled
+}
