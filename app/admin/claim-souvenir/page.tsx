@@ -146,101 +146,103 @@ export default function ClaimSouvenirPage() {
   const claimedQuantity = totalQuantity - remainingQuantity;
 
   return (
-    <div className="space-y-6">
+    <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
       {/* Header Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Gift className="h-6 w-6 text-emerald-600" />
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Gift className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
               Claim Souvenir Management
             </h1>
-            <p className="text-gray-600 mt-1">Record points, souvenirs, photobooth or goodybag with QR Code</p>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">Record points, souvenirs, photobooth or goodybag with QR Code</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Search items..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 w-80 border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                className="pl-10 w-full sm:w-64 lg:w-80 border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
               />
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-                  disabled={isLoading}
-                  onClick={() => setSelectedItem(null)}
-                >
-                  <Plus className="mr-2 h-4 w-4" /> Add Item
-                </Button>
-              </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {selectedItem ? "Edit" : "Add"} Claimable Item
-                </DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSaveItem}>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right" required>
-                      Name
-                    </Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      defaultValue={selectedItem?.name}
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="description" className="text-right">
-                      Description
-                    </Label>
-                    <Input
-                      id="description"
-                      name="description"
-                      defaultValue={selectedItem?.description}
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label
-                      htmlFor="totalQuantity"
-                      className="text-right"
-                      required
-                    >
-                      Total Quantity
-                    </Label>
-                    <Input
-                      id="totalQuantity"
-                      name="totalQuantity"
-                      type="number"
-                      defaultValue={selectedItem?.totalQuantity}
-                      className="col-span-3"
-                    />
-                  </div>
-                </div>
-                <Button type="submit">Save</Button>
-              </form>
-            </DialogContent>
-            </Dialog>
-            <Button 
-              variant="outline" 
-              onClick={handleExport}
-              className="border-gray-300 hover:bg-gray-50 transition-colors duration-200"
-            >
-              <Upload className="mr-2 h-4 w-4" /> Export
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 w-full sm:w-auto"
+                    disabled={isLoading}
+                    onClick={() => setSelectedItem(null)}
+                  >
+                    <Plus className="mr-2 h-4 w-4" /> <span className="sm:hidden">Add</span><span className="hidden sm:inline">Add Item</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>
+                      {selectedItem ? "Edit" : "Add"} Claimable Item
+                    </DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleSaveItem}>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="name" className="text-right" required>
+                          Name
+                        </Label>
+                        <Input
+                          id="name"
+                          name="name"
+                          defaultValue={selectedItem?.name}
+                          className="col-span-3"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="description" className="text-right">
+                          Description
+                        </Label>
+                        <Input
+                          id="description"
+                          name="description"
+                          defaultValue={selectedItem?.description}
+                          className="col-span-3"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label
+                          htmlFor="totalQuantity"
+                          className="text-right"
+                          required
+                        >
+                          Total Quantity
+                        </Label>
+                        <Input
+                          id="totalQuantity"
+                          name="totalQuantity"
+                          type="number"
+                          defaultValue={selectedItem?.totalQuantity}
+                          className="col-span-3"
+                        />
+                      </div>
+                    </div>
+                    <Button type="submit">Save</Button>
+                  </form>
+                </DialogContent>
+              </Dialog>
+              <Button 
+                variant="outline" 
+                onClick={handleExport}
+                className="border-gray-300 hover:bg-gray-50 transition-colors duration-200 w-full sm:w-auto"
+              >
+                <Upload className="mr-2 h-4 w-4" /> Export
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid gap-6 md:grid-cols-4">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -329,60 +331,60 @@ export default function ClaimSouvenirPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <CardContent className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {items.map((item) => (
               <Card key={item.id} className="border border-gray-200 hover:shadow-lg transition-shadow duration-200">
-                <CardContent className="p-6">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">{item.name}</h3>
-                      <p className="text-sm text-gray-600 line-clamp-2">{item.description}</p>
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">{item.name}</h3>
+                      <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{item.description}</p>
                     </div>
                     <div className="flex gap-1 ml-2">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleEdit(item)}
-                        className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600"
+                        className="h-7 w-7 sm:h-8 sm:w-8 p-0 hover:bg-blue-50 hover:text-blue-600"
                       >
-                        <Pencil className="h-4 w-4" />
+                        <Pencil className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDelete(item.id)}
-                        className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
+                        className="h-7 w-7 sm:h-8 sm:w-8 p-0 hover:bg-red-50 hover:text-red-600"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                     </div>
                   </div>
                   
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-                        <BarChart2 className="h-5 w-5 text-emerald-600" />
+                      <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                        <BarChart2 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Remaining</p>
-                        <p className="text-xl font-bold text-emerald-600">{item.remainingQuantity}</p>
+                        <p className="text-lg sm:text-xl font-bold text-emerald-600">{item.remainingQuantity}</p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-gray-500">Total</p>
-                      <p className="text-sm font-medium text-gray-700">{item.totalQuantity}</p>
+                      <p className="text-xs sm:text-sm font-medium text-gray-700">{item.totalQuantity}</p>
                     </div>
                   </div>
                   
                   <div className="mb-4">
                     <div className="flex justify-between text-xs text-gray-500 mb-1">
-                      <span>Progress</span>
-                      <span>{Math.round(((item.totalQuantity - item.remainingQuantity) / item.totalQuantity) * 100)}%</span>
+                      <span className="text-xs sm:text-sm font-medium text-gray-700">Progress</span>
+                      <span className="text-xs sm:text-sm text-gray-500">{Math.round(((item.totalQuantity - item.remainingQuantity) / item.totalQuantity) * 100)}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 rounded-full h-1.5 sm:h-2">
                       <div 
-                        className="bg-emerald-600 h-2 rounded-full transition-all duration-300" 
+                        className="bg-emerald-600 h-1.5 sm:h-2 rounded-full transition-all duration-300" 
                         style={{ width: `${((item.totalQuantity - item.remainingQuantity) / item.totalQuantity) * 100}%` }}
                       ></div>
                     </div>

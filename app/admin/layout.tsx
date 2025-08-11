@@ -106,25 +106,25 @@ function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-gray-200/60 bg-white/80 backdrop-blur-md">
-      <div className="flex h-16 items-center gap-4 px-6">
+      <div className="flex h-16 items-center gap-2 sm:gap-4 px-4 sm:px-6">
         {/* Left Section */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <Button 
             variant="ghost" 
             size="icon" 
             onClick={toggleSidebar}
-            className="hover:bg-gray-100 rounded-lg p-2 transition-colors"
+            className="hover:bg-gray-100 rounded-lg p-2 transition-colors flex-shrink-0"
           >
-            <Menu className="h-6 w-6" />
+            <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
           </Button>
           {user?.role === "SuperAdmin" ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-lg p-2 transition-colors">
-                  <h1 className="text-lg font-semibold text-gray-900">
-                    {selectedEvent?.name || "Select an Event"}
+                <div className="flex items-center gap-1 sm:gap-2 cursor-pointer hover:bg-gray-50 rounded-lg p-1 sm:p-2 transition-colors min-w-0">
+                  <h1 className="text-sm sm:text-lg font-semibold text-gray-900 truncate">
+                    {selectedEvent?.name || "Select Event"}
                   </h1>
-                  <ChevronDown className="h-5 w-5 text-gray-500" />
+                  <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 flex-shrink-0" />
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-64">
@@ -142,14 +142,14 @@ function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            <h1 className="text-lg font-semibold text-gray-900">
+            <h1 className="text-sm sm:text-lg font-semibold text-gray-900 truncate">
               {selectedEvent?.name || "Event"}
             </h1>
           )}
         </div>
 
         {/* Center Section - Search */}
-        <div className="flex-1 flex justify-center">
+        <div className="hidden md:flex flex-1 justify-center">
           <div className="relative w-full max-w-lg">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
@@ -160,7 +160,16 @@ function Header() {
         </div>
 
         {/* Right Section */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 sm:gap-3">
+          {/* Mobile Search Button */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="md:hidden h-9 w-9 rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <Search className="h-4 w-4 text-gray-600" />
+          </Button>
+          
           {/* Notifications */}
           <Button 
             variant="ghost" 
@@ -177,7 +186,7 @@ function Header() {
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-9 w-9 rounded-full hover:bg-gray-100 transition-colors"
+            className="hidden sm:flex h-9 w-9 rounded-full hover:bg-gray-100 transition-colors"
           >
             <Settings className="h-4 w-4 text-gray-600" />
           </Button>
@@ -187,16 +196,16 @@ function Header() {
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="ghost" 
-                className="relative h-9 rounded-full pl-3 pr-2 hover:bg-gray-100 transition-colors"
+                className="relative h-9 rounded-full pl-2 sm:pl-3 pr-1 sm:pr-2 hover:bg-gray-100 transition-colors"
               >
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-7 w-7 ring-2 ring-blue-500/20">
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <Avatar className="h-6 w-6 sm:h-7 sm:w-7 ring-2 ring-blue-500/20">
                     <AvatarImage src="https://github.com/shadcn.png" />
-                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm font-semibold">
+                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs sm:text-sm font-semibold">
                       {user?.username?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="hidden md:block text-left">
+                  <div className="hidden lg:block text-left">
                     <div className="text-sm font-medium text-gray-900">
                       {user?.username || "User"}
                     </div>
@@ -204,7 +213,7 @@ function Header() {
                       {user?.role?.toLowerCase() || "Admin"}
                     </div>
                   </div>
-                  <ChevronDown className="h-3 w-3 text-gray-400" />
+                  <ChevronDown className="h-3 w-3 text-gray-400 hidden sm:block" />
                 </div>
               </Button>
             </DropdownMenuTrigger>
@@ -309,7 +318,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       <SidebarInset className="flex flex-col min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
         <Header />
         <main className="flex-1">
-          <div className="p-6 mx-auto max-w-7xl">
+          <div className="p-3 sm:p-4 md:p-6 mx-auto max-w-7xl">
             {children}
           </div>
         </main>

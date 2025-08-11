@@ -156,33 +156,35 @@ export default function EventManagementPage() {
     <div className="space-y-6">
       {/* Header Section */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Calendar className="h-6 w-6 text-emerald-600" />
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" />
               Event Management
             </h1>
-            <p className="text-gray-600 mt-1">Manage and organize your events efficiently</p>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">Manage and organize your events efficiently</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Search events..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 w-80 border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                className="pl-10 w-full sm:w-80 border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
               />
             </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 w-full sm:w-auto"
                   onClick={() => {
                     setSelectedEvent(null);
                   }}
                 >
-                  <Plus className="mr-2 h-4 w-4" /> Add Event
+                  <Plus className="mr-2 h-4 w-4" /> 
+                  <span className="hidden sm:inline">Add Event</span>
+                  <span className="sm:hidden">Add</span>
                 </Button>
               </DialogTrigger>
             <DialogContent className="max-w-2xl p-0 overflow-hidden">
@@ -326,7 +328,7 @@ export default function EventManagementPage() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         <Card className="border-0 shadow-lg hover:shadow-xl transition-shadow duration-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -389,101 +391,106 @@ export default function EventManagementPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-gray-50">
-              <TableRow className="border-b border-gray-200">
-                <TableHead className="font-semibold text-gray-700 py-4">#</TableHead>
-                <TableHead className="font-semibold text-gray-700">
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => handleSort("name")}
-                    className="hover:bg-gray-100 font-semibold text-gray-700"
-                  >
-                    Event Name
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead className="font-semibold text-gray-700">
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort("description")}
-                    className="hover:bg-gray-100 font-semibold text-gray-700"
-                  >
-                    Description
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead className="font-semibold text-gray-700">
-                  <Button 
-                    variant="ghost" 
-                    onClick={() => handleSort("isActive")}
-                    className="hover:bg-gray-100 font-semibold text-gray-700"
-                  >
-                    Status
-                    <ArrowUpDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead className="text-center font-semibold text-gray-700">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {events.map((event, index) => (
-                <TableRow key={event.id} className="hover:bg-gray-50 transition-colors duration-150">
-                  <TableCell className="font-medium text-gray-600 py-4">
-                    {(page - 1) * 10 + index + 1}
-                  </TableCell>
-                  <TableCell className="font-medium text-gray-900">{event.name}</TableCell>
-                  <TableCell className="text-gray-600 max-w-xs truncate">{event.description}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                        event.isActive 
-                          ? "bg-green-100 text-green-800 border border-green-200" 
-                          : "bg-red-100 text-red-800 border border-red-200"
-                      }`}
+          <div className="overflow-x-auto">
+            <Table className="min-w-[600px]">
+              <TableHeader className="bg-gray-50">
+                <TableRow className="border-b border-gray-200">
+                  <TableHead className="font-semibold text-gray-700 py-4 text-xs sm:text-sm">#</TableHead>
+                  <TableHead className="font-semibold text-gray-700">
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => handleSort("name")}
+                      className="hover:bg-gray-100 font-semibold text-gray-700 text-xs sm:text-sm p-1 sm:p-2"
                     >
-                      {event.isActive ? (
-                        <>
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Active
-                        </>
-                      ) : (
-                        <>
-                          <XCircle className="w-3 h-3 mr-1" />
-                          Inactive
-                        </>
-                      )}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-colors duration-200"
-                        onClick={() => handleEdit(event)}
+                      Event Name
+                      <ArrowUpDown className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-700 hidden md:table-cell">
+                    <Button
+                      variant="ghost"
+                      onClick={() => handleSort("description")}
+                      className="hover:bg-gray-100 font-semibold text-gray-700 text-xs sm:text-sm p-1 sm:p-2"
+                    >
+                      Description
+                      <ArrowUpDown className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-700">
+                    <Button 
+                      variant="ghost" 
+                      onClick={() => handleSort("isActive")}
+                      className="hover:bg-gray-100 font-semibold text-gray-700 text-xs sm:text-sm p-1 sm:p-2"
+                    >
+                      Status
+                      <ArrowUpDown className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
+                    </Button>
+                  </TableHead>
+                  <TableHead className="text-center font-semibold text-gray-700 text-xs sm:text-sm">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {events.map((event, index) => (
+                  <TableRow key={event.id} className="hover:bg-gray-50 transition-colors duration-150">
+                    <TableCell className="font-medium text-gray-600 py-3 sm:py-4 text-xs sm:text-sm">
+                      {(page - 1) * 10 + index + 1}
+                    </TableCell>
+                    <TableCell className="font-medium text-gray-900 text-xs sm:text-sm">{event.name}</TableCell>
+                    <TableCell className="text-gray-600 max-w-xs truncate text-xs sm:text-sm hidden md:table-cell">{event.description}</TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium ${
+                          event.isActive 
+                            ? "bg-green-100 text-green-800 border border-green-200" 
+                            : "bg-red-100 text-red-800 border border-red-200"
+                        }`}
                       >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors duration-200"
-                        onClick={() => handleDelete(event.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+                        {event.isActive ? (
+                          <>
+                            <CheckCircle className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
+                            <span className="hidden sm:inline">Active</span>
+                            <span className="sm:hidden">A</span>
+                          </>
+                        ) : (
+                          <>
+                            <XCircle className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />
+                            <span className="hidden sm:inline">Inactive</span>
+                            <span className="sm:hidden">I</span>
+                          </>
+                        )}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-1 sm:gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-colors duration-200 h-7 w-7 sm:h-8 sm:w-8 p-0"
+                          onClick={() => handleEdit(event)}
+                        >
+                          <Pencil className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors duration-200 h-7 w-7 sm:h-8 sm:w-8 p-0"
+                          onClick={() => handleDelete(event.id)}
+                        >
+                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
                 </TableRow>
               ))}
-            </TableBody>
-          </Table>
+              </TableBody>
+            </Table>
+          </div>
           
           {/* Pagination */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-gray-50">
-            <div className="text-sm text-gray-600">
-              Showing {((page - 1) * 10) + 1} to {Math.min(page * 10, meta?.total || 0)} of {meta?.total || 0} results
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
+              <span className="hidden sm:inline">Showing {((page - 1) * 10) + 1} to {Math.min(page * 10, meta?.total || 0)} of {meta?.total || 0} results</span>
+              <span className="sm:hidden">{meta?.total || 0} total</span>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -491,21 +498,23 @@ export default function EventManagementPage() {
                 size="sm"
                 onClick={() => setPage(page - 1)}
                 disabled={page === 1}
-                className="border-gray-300 hover:bg-gray-100 transition-colors duration-200"
+                className="border-gray-300 hover:bg-gray-100 transition-colors duration-200 text-xs sm:text-sm px-2 sm:px-3"
               >
-                Previous
+                <span className="hidden sm:inline">Previous</span>
+                <span className="sm:hidden">Prev</span>
               </Button>
-              <span className="text-sm font-medium text-gray-700 px-3">
-                Page {page} of {meta?.totalPages || 1}
+              <span className="text-xs sm:text-sm font-medium text-gray-700 px-2 sm:px-3">
+                {page}/{meta?.totalPages || 1}
               </span>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setPage(page + 1)}
                 disabled={page === meta?.totalPages}
-                className="border-gray-300 hover:bg-gray-100 transition-colors duration-200"
+                className="border-gray-300 hover:bg-gray-100 transition-colors duration-200 text-xs sm:text-sm px-2 sm:px-3"
               >
-                Next
+                <span className="hidden sm:inline">Next</span>
+                <span className="sm:hidden">Next</span>
               </Button>
             </div>
           </div>

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { apiResponse } from "@/lib/api-response";
 import prisma from "@/lib/prisma";
 import { hash } from "bcrypt";
+import { authenticator } from "otplib";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,8 +17,8 @@ export async function POST(req: NextRequest) {
       return apiResponse("error", "User not found", null, [], null, 404);
     }
 
-    if (!user.otpExpires || user.otp !== otp || user.otpExpires < new Date()) {
-      return apiResponse("error", "Invalid or expired OTP", null, [], null, 400);
+    if (!user.totpSecret || !authenticator.check(otp, user.totpSecret)) {
+      return apiResponse("error", "Invalid or expired TOTP code", null, [], null, 400);
     }
 
     if (password) {
@@ -41,10 +42,10 @@ export async function POST(req: NextRequest) {
         200
       );
     } else {
-      // Only verify OTP
+      // Only verify TOTP
       return apiResponse(
         "success",
-        "OTP verified successfully",
+        "TOTP verified successfully",
         null,
         null,
         null,

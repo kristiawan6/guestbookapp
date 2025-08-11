@@ -16,8 +16,16 @@ export async function login(
     return { error: "Please provide both username and password." };
   }
 
+  // Trim whitespace and validate input
+  const trimmedUsername = username.trim();
+  const trimmedPassword = password.trim();
+
+  if (!trimmedUsername || !trimmedPassword) {
+    return { error: "Please provide both username and password." };
+  }
+
   const user = await prisma.user.findUnique({
-    where: { username },
+    where: { username: trimmedUsername },
     include: { events: true },
   });
 
@@ -25,7 +33,12 @@ export async function login(
     return { error: "Invalid username or password." };
   }
 
-  const passwordsMatch = await compare(password, user.password);
+  // Check if user account is active
+  if (!user.isActive) {
+    return { error: "Your account has been deactivated. Please contact support for assistance." };
+  }
+
+  const passwordsMatch = await compare(trimmedPassword, user.password);
 
   if (!passwordsMatch) {
     return { error: "Invalid username or password." };

@@ -10,7 +10,7 @@ import { login } from "@/app/auth/login/actions";
 import Image from "next/image";
 import Link from "next/link";
 import { usePrefetchUser } from "@/hooks/use-prefetch-user";
-import { toast } from "sonner";
+import { toastService } from "@/lib/toast";
 import { useRouter } from "next/navigation";
 import { Lock, Mail } from "lucide-react";
  
@@ -23,29 +23,58 @@ import { Lock, Mail } from "lucide-react";
 
   useEffect(() => {
     if (state?.error) {
-      toast.error("Login Failed", {
-        description: state.error,
-        classNames: {
-          description: "text-black",
-        },
+      // Professional error message with better UX
+      toastService.error("Authentication Failed", {
+        description: getErrorDescription(state.error),
+        duration: 5000
       });
       setLoading(false);
       setProgress(0);
     } else if (state?.success) {
       setProgress(100);
-      toast.success("Login Success", {
-        description: "Welcome back! You have successfully logged in.",
-        classNames: {
-          description: "text-black",
-        },
+      // Professional success message with role-based welcome
+      const welcomeMessage = getRoleBasedWelcome(state.role);
+      toastService.success("Welcome Back!", {
+        description: welcomeMessage,
+        duration: 3000
       });
-      if (state.role === "SuperAdmin" || state.role === "AdminEvents") {
-        router.push("/admin/dashboard");
-      } else {
-        router.push("/dashboard");
-      }
+      
+      // Slight delay for better UX before redirect
+      setTimeout(() => {
+        if (state.role === "SuperAdmin" || state.role === "AdminEvents") {
+          router.push("/admin/dashboard");
+        } else {
+          router.push("/dashboard");
+        }
+      }, 1000);
     }
   }, [state, router]);
+
+  // Helper function to provide user-friendly error descriptions
+  const getErrorDescription = (error: string): string => {
+    switch (error) {
+      case "Invalid username or password.":
+        return "Please check your credentials and try again. If you've forgotten your password, use the reset link below.";
+      case "Please provide both username and password.":
+        return "Both username and password fields are required to sign in.";
+      case "Your account has been deactivated. Please contact support for assistance.":
+        return "Your account is currently inactive. Please reach out to our support team to reactivate your account.";
+      default:
+        return "We're having trouble signing you in. Please try again or contact support if the issue persists.";
+    }
+  };
+
+  // Helper function to provide role-based welcome messages
+  const getRoleBasedWelcome = (role?: string): string => {
+    switch (role) {
+      case "SuperAdmin":
+        return "You have full administrative access. Redirecting to admin dashboard...";
+      case "AdminEvents":
+        return "You have event management access. Redirecting to admin dashboard...";
+      default:
+        return "You've successfully signed in. Redirecting to your dashboard...";
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">

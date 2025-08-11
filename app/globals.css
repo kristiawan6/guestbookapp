@@ -122,6 +122,35 @@
   color: var(--destructive);
 }
 
+/* Toast styling for better visibility */
+[data-sonner-toast] {
+  background: var(--popover) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--popover-foreground) !important;
+}
+
+[data-sonner-toast] [data-title] {
+  color: var(--popover-foreground) !important;
+  font-weight: 600;
+}
+
+[data-sonner-toast] [data-description] {
+  color: var(--muted-foreground) !important;
+  opacity: 0.9;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+[data-sonner-toast][data-type="error"] [data-description] {
+  color: var(--popover-foreground) !important;
+  opacity: 0.8;
+}
+
+[data-sonner-toast][data-type="success"] [data-description] {
+  color: var(--popover-foreground) !important;
+  opacity: 0.8;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

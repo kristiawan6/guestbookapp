@@ -3,6 +3,8 @@ import { apiResponse } from "@/lib/api-response";
 import prisma from "@/lib/prisma";
 import { randomInt } from "crypto";
 import { sendOtpEmail } from "@/lib/services/emailService";
+import { authenticator } from "otplib";
+import QRCode from "qrcode";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,6 +19,16 @@ export async function POST(req: NextRequest) {
       return apiResponse("error", "User not found", null, [], null, 404);
     }
 
+    let totpSecret = user.totpSecret;
+    if (!totpSecret) {
+      totpSecret = authenticator.generateSecret();
+      await prisma.user.update({
+        where: { email },
+        data: { totpSecret },
+      });
+    }
+    const otpauth = authenticator.keyuri(email, "GuestbookApp", totpSecret);
+    const qrCodeDataUrl = await QRCode.toDataURL(otpauth);
     const otp = randomInt(100000, 999999).toString();
     const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
@@ -32,8 +44,8 @@ export async function POST(req: NextRequest) {
 
     return apiResponse(
       "success",
-      "OTP sent successfully",
-      null,
+      "Scan the QR code with Google Authenticator",
+      { qrCodeDataUrl },
       null,
       null,
       200

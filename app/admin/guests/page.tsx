@@ -567,90 +567,101 @@ export default function GuestPage() {
           </div>
         </div>
         {/* Action Bar */}
-        <div className="bg-white border-0 shadow-lg rounded-xl p-6 mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex flex-wrap gap-3">
-              <Button 
-                disabled={isLoading}
-                onClick={() => {
-                  if (guestCategories.length === 0) {
-                    Swal.fire({
-                      icon: "error",
-                      title: "No Guest Category",
-                      text: "Please create a guest category first before adding a guest.",
-                    });
-                  } else {
-                    setSelectedGuest(null);
-                    setIsDialogOpen(true);
-                  }
-                }}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md"
-              >
-                <Plus className="mr-2 h-4 w-4" /> Add Guest
+        <div className="bg-white border-0 shadow-lg rounded-xl p-4 sm:p-6 mb-6">
+          <div className="flex flex-col gap-4">
+            {/* Top Row - Main Actions */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex flex-wrap gap-2 sm:gap-3">
+                <Button 
+                  disabled={isLoading}
+                  onClick={() => {
+                    if (guestCategories.length === 0) {
+                      Swal.fire({
+                        icon: "error",
+                        title: "No Guest Category",
+                        text: "Please create a guest category first before adding a guest.",
+                      });
+                    } else {
+                      setSelectedGuest(null);
+                      setIsDialogOpen(true);
+                    }
+                  }}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md text-sm"
+                >
+                  <Plus className="mr-1 sm:mr-2 h-4 w-4" /> 
+                  <span className="hidden sm:inline">Add Guest</span>
+                  <span className="sm:hidden">Add</span>
+                </Button>
+                <ImportDialog
+                  onImport={handleImport}
+                  onDownloadTemplate={handleDownloadTemplate}
+                />
+                <Button 
+                  variant="outline" 
+                  onClick={handleExport}
+                  className="border-gray-300 hover:bg-gray-50 text-sm"
+                >
+                  <Upload className="mr-1 sm:mr-2 h-4 w-4" /> 
+                  <span className="hidden sm:inline">Export</span>
+                  <span className="sm:hidden">Export</span>
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="outline"
+                      disabled={selectedGuests.length === 0}
+                      className="border-gray-300 hover:bg-gray-50 disabled:opacity-50 text-sm"
+                    >
+                      <span className="hidden sm:inline">Bulk Actions ({selectedGuests.length})</span>
+                      <span className="sm:hidden">Bulk ({selectedGuests.length})</span>
+                      <ChevronDown className="ml-1 sm:ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-48">
+                    <DropdownMenuItem>
+                      <Printer className="mr-2 h-4 w-4" /> Print Labels
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleQRCardGeneration}>
+                      <QrCode className="mr-2 h-4 w-4" /> Print QR Codes
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleBulkWhatsApp}>
+                      <MessageSquare className="mr-2 h-4 w-4" /> Send WhatsApp
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleBulkEmail}>
+                      <Mail className="mr-2 h-4 w-4" /> Send Email
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleBulkDelete} className="text-red-600">
+                      <Trash2 className="mr-2 h-4 w-4" /> Delete Selected
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              
+              <Button variant="outline" className="border-gray-300 hover:bg-gray-50 text-sm sm:w-auto w-full">
+                <Printer className="mr-1 sm:mr-2 h-4 w-4" /> Print
               </Button>
-              <ImportDialog
-                onImport={handleImport}
-                onDownloadTemplate={handleDownloadTemplate}
-              />
-              <Button 
-                variant="outline" 
-                onClick={handleExport}
-                className="border-gray-300 hover:bg-gray-50"
-              >
-                <Upload className="mr-2 h-4 w-4" /> Export
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline"
-                    disabled={selectedGuests.length === 0}
-                    className="border-gray-300 hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    Bulk Actions ({selectedGuests.length}) <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-48">
-                  <DropdownMenuItem>
-                    <Printer className="mr-2 h-4 w-4" /> Print Labels
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleQRCardGeneration}>
-                    <QrCode className="mr-2 h-4 w-4" /> Print QR Codes
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleBulkWhatsApp}>
-                    <MessageSquare className="mr-2 h-4 w-4" /> Send WhatsApp
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleBulkEmail}>
-                    <Mail className="mr-2 h-4 w-4" /> Send Email
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleBulkDelete} className="text-red-600">
-                    <Trash2 className="mr-2 h-4 w-4" /> Delete Selected
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
             </div>
             
-            <div className="flex items-center gap-3">
+            {/* Bottom Row - Search and Selection Info */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <Input
                 placeholder="Search guests by name, email, or phone..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-80 border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                className="flex-1 border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
               />
               {selectedGuests.length > 0 && (
-                <div className="text-sm text-gray-600 whitespace-nowrap">
+                <div className="text-sm text-gray-600 whitespace-nowrap px-3 py-2 bg-blue-50 rounded-md">
                   {selectedGuests.length} selected
                 </div>
               )}
-              <Button variant="outline" className="border-gray-300 hover:bg-gray-50">
-                <Printer className="mr-2 h-4 w-4" /> Print
-              </Button>
             </div>
           </div>
         </div>
         {/* Main Table Card */}
         <div className="bg-white border-0 shadow-lg rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <div className="flex items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <h3 className="text-lg font-semibold text-gray-900">Guest Records</h3>
               <div className="text-sm text-gray-500">
                 Showing {guests.length} of {meta?.total || 0} guests
@@ -658,9 +669,9 @@ export default function GuestPage() {
             </div>
           </div>
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="min-w-full">
               <TableHeader className="bg-gray-50/50">
-              <TableRow>
+              <TableRow className="hidden lg:table-row">
                 <TableHead colSpan={7} className="text-center">
                   Data Guest
                 </TableHead>
@@ -670,7 +681,7 @@ export default function GuestPage() {
               </TableRow>
 
                 <TableRow className="border-b border-gray-200">
-                  <TableHead className="w-12 text-center py-4">
+                  <TableHead className="w-12 sm:w-16 text-center py-4 sm:py-6 px-2 sm:px-4">
                     <Checkbox
                       checked={
                         guests.length > 0 &&
@@ -686,90 +697,92 @@ export default function GuestPage() {
                       className="border-gray-400"
                     />
                   </TableHead>
-                  <TableHead className="font-semibold text-gray-700 py-4">
-                    <Button variant="ghost" onClick={() => handleSort("name")} className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900">
-                      Full Name
-                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                  <TableHead className="font-semibold text-gray-700 py-4 min-w-[120px]">
+                    <Button variant="ghost" onClick={() => handleSort("name")} className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900 text-xs sm:text-sm">
+                      <span className="hidden sm:inline">Full Name</span>
+                      <span className="sm:hidden">Name</span>
+                      <ArrowUpDown className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   </TableHead>
-                  <TableHead className="font-semibold text-gray-700 py-4">
+                  <TableHead className="hidden md:table-cell font-semibold text-gray-700 py-4">
                     <Button
                       variant="ghost"
                       onClick={() => handleSort("guestCategoryId")}
-                      className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900"
+                      className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900 text-sm"
                     >
                       Category
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
-                  <TableHead className="font-semibold text-gray-700 py-4">
+                  <TableHead className="font-semibold text-gray-700 py-4 min-w-[100px]">
                     <Button
                       variant="ghost"
                       onClick={() => handleSort("phoneNumber")}
-                      className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900"
+                      className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900 text-xs sm:text-sm"
                     >
-                      Phone Number
-                      <ArrowUpDown className="ml-2 h-4 w-4" />
+                      <span className="hidden sm:inline">Phone Number</span>
+                      <span className="sm:hidden">Phone</span>
+                      <ArrowUpDown className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   </TableHead>
-                  <TableHead className="font-semibold text-gray-700 py-4">
-                    <Button variant="ghost" onClick={() => handleSort("email")} className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900">
+                  <TableHead className="hidden lg:table-cell font-semibold text-gray-700 py-4">
+                    <Button variant="ghost" onClick={() => handleSort("email")} className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900 text-sm">
                       Email Address
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
-                  <TableHead className="font-semibold text-gray-700 py-4">
-                    <Button variant="ghost" onClick={() => handleSort("address")} className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900">
+                  <TableHead className="hidden xl:table-cell font-semibold text-gray-700 py-4">
+                    <Button variant="ghost" onClick={() => handleSort("address")} className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900 text-sm">
                       Address / Institution
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
-                  <TableHead className="font-semibold text-gray-700 py-4">
-                    <Button variant="ghost" onClick={() => handleSort("notes")} className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900">
+                  <TableHead className="hidden xl:table-cell font-semibold text-gray-700 py-4">
+                    <Button variant="ghost" onClick={() => handleSort("notes")} className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900 text-sm">
                       Notes
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
-                  <TableHead className="font-semibold text-gray-700 py-4">Created Date</TableHead>
-                  <TableHead className="font-semibold text-gray-700 py-4">Created By</TableHead>
-                  <TableHead className="font-semibold text-gray-700 py-4">Arrival Date</TableHead>
-                  <TableHead className="font-semibold text-gray-700 py-4">
+                  <TableHead className="hidden lg:table-cell font-semibold text-gray-700 py-4 text-sm">Created Date</TableHead>
+                  <TableHead className="hidden xl:table-cell font-semibold text-gray-700 py-4 text-sm">Created By</TableHead>
+                  <TableHead className="hidden xl:table-cell font-semibold text-gray-700 py-4 text-sm">Arrival Date</TableHead>
+                  <TableHead className="hidden lg:table-cell font-semibold text-gray-700 py-4">
                     <Button
                       variant="ghost"
                       onClick={() => handleSort("numberOfGuests")}
-                      className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900"
+                      className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900 text-sm"
                     >
                       Guest Count
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
-                  <TableHead className="font-semibold text-gray-700 py-4">
-                    <Button variant="ghost" onClick={() => handleSort("session")} className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900">
+                  <TableHead className="hidden xl:table-cell font-semibold text-gray-700 py-4">
+                    <Button variant="ghost" onClick={() => handleSort("session")} className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900 text-sm">
                       Session
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
-                  <TableHead className="font-semibold text-gray-700 py-4">
+                  <TableHead className="hidden lg:table-cell font-semibold text-gray-700 py-4">
                     <Button
                       variant="ghost"
                       onClick={() => handleSort("tableNumber")}
-                      className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900"
+                      className="h-auto p-0 font-semibold text-gray-700 hover:text-gray-900 text-sm"
                     >
                       Table No.
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
-                  <TableHead className="font-semibold text-gray-700 py-4">Signature</TableHead>
-                  <TableHead className="font-semibold text-gray-700 py-4">WhatsApp Status</TableHead>
-                  <TableHead className="font-semibold text-gray-700 py-4">Email Status</TableHead>
-                  <TableHead className="font-semibold text-gray-700 py-4">Website Status</TableHead>
-                  <TableHead className="text-center font-semibold text-gray-700 py-4">Actions</TableHead>
+                  <TableHead className="hidden xl:table-cell font-semibold text-gray-700 py-4 text-sm">Signature</TableHead>
+                  <TableHead className="hidden xl:table-cell font-semibold text-gray-700 py-4 text-sm">WhatsApp Status</TableHead>
+                  <TableHead className="hidden xl:table-cell font-semibold text-gray-700 py-4 text-sm">Email Status</TableHead>
+                  <TableHead className="hidden xl:table-cell font-semibold text-gray-700 py-4 text-sm">Website Status</TableHead>
+                  <TableHead className="text-center font-semibold text-gray-700 py-4 text-sm">Actions</TableHead>
                 </TableRow>
             </TableHeader>
               <TableBody>
                 {guests.map((guest, index) => (
                   <TableRow key={guest.id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
-                    <TableCell className="text-center py-4">
+                    <TableCell className="w-12 sm:w-16 text-center py-4 sm:py-6 px-2 sm:px-4">
                       <Checkbox
                         checked={selectedGuests.includes(guest.id)}
                         onCheckedChange={(checked) => {
@@ -784,15 +797,22 @@ export default function GuestPage() {
                         className="border-gray-400"
                       />
                     </TableCell>
-                    <TableCell className="py-4">
+                    <TableCell className="py-4 min-w-[120px]">
                       <button
-                        className="font-medium text-emerald-600 hover:text-emerald-800 hover:underline transition-colors"
+                        className="font-medium text-emerald-600 hover:text-emerald-800 hover:underline transition-colors text-xs sm:text-sm"
                         onClick={() => handleEdit(guest)}
                       >
-                        {guest.name}
+                        <div className="truncate">{guest.name}</div>
                       </button>
+                      <div className="md:hidden text-xs text-gray-500 mt-1">
+                        {
+                          guestCategories.find(
+                            (c) => c.id === guest.guestCategoryId
+                          )?.name || 'N/A'
+                        }
+                      </div>
                     </TableCell>
-                    <TableCell className="py-4">
+                    <TableCell className="hidden md:table-cell py-4">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         {
                           guestCategories.find(
@@ -801,57 +821,66 @@ export default function GuestPage() {
                         }
                       </span>
                     </TableCell>
-                    <TableCell className="py-4 text-gray-700">{guest.phoneNumber || '-'}</TableCell>
-                    <TableCell className="py-4 text-gray-700">{guest.email || '-'}</TableCell>
-                    <TableCell className="py-4 text-gray-700 max-w-xs truncate">{guest.address || '-'}</TableCell>
-                    <TableCell className="py-4 text-gray-700 max-w-xs truncate">{guest.notes || '-'}</TableCell>
-                    <TableCell className="py-4 text-gray-600 text-sm">2024-07-06</TableCell>
-                    <TableCell className="py-4 text-gray-600 text-sm">Admin</TableCell>
-                    <TableCell className="py-4 text-gray-600 text-sm">2024-07-06</TableCell>
-                    <TableCell className="py-4">
+                    <TableCell className="py-4 text-gray-700 min-w-[100px] text-xs sm:text-sm">
+                      <div className="truncate">{guest.phoneNumber || '-'}</div>
+                      <div className="lg:hidden text-xs text-gray-500 mt-1 truncate">
+                        {guest.email || '-'}
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell py-4 text-gray-700 text-sm">
+                      <div className="truncate max-w-[150px]">{guest.email || '-'}</div>
+                    </TableCell>
+                    <TableCell className="hidden xl:table-cell py-4 text-gray-700 max-w-xs truncate text-sm">{guest.address || '-'}</TableCell>
+                    <TableCell className="hidden xl:table-cell py-4 text-gray-700 max-w-xs truncate text-sm">{guest.notes || '-'}</TableCell>
+                    <TableCell className="hidden lg:table-cell py-4 text-gray-600 text-sm">2024-07-06</TableCell>
+                    <TableCell className="hidden xl:table-cell py-4 text-gray-600 text-sm">Admin</TableCell>
+                    <TableCell className="hidden xl:table-cell py-4 text-gray-600 text-sm">2024-07-06</TableCell>
+                    <TableCell className="hidden lg:table-cell py-4">
                       <span className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-800">
                         {guest.numberOfGuests}
                       </span>
                     </TableCell>
-                    <TableCell className="py-4 text-gray-700">{guest.session || '-'}</TableCell>
-                    <TableCell className="py-4 text-gray-700">{guest.tableNumber || '-'}</TableCell>
-                    <TableCell className="py-4">
+                    <TableCell className="hidden xl:table-cell py-4 text-gray-700 text-sm">{guest.session || '-'}</TableCell>
+                    <TableCell className="hidden lg:table-cell py-4 text-gray-700 text-sm">{guest.tableNumber || '-'}</TableCell>
+                    <TableCell className="hidden xl:table-cell py-4">
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         Signed
                       </span>
                     </TableCell>
-                    <TableCell className="py-4">
+                    <TableCell className="hidden xl:table-cell py-4">
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         Sent
                       </span>
                     </TableCell>
-                    <TableCell className="py-4">
+                    <TableCell className="hidden xl:table-cell py-4">
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         Sent
                       </span>
                     </TableCell>
-                    <TableCell className="py-4">
+                    <TableCell className="hidden xl:table-cell py-4">
                       <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                         Viewed
                       </span>
                     </TableCell>
                     <TableCell className="py-4">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1 sm:gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleEdit(guest)}
-                          className="h-8 px-3 text-xs border-gray-300 hover:bg-gray-50"
+                          className="h-7 sm:h-8 px-2 sm:px-3 text-xs border-gray-300 hover:bg-gray-50"
                         >
-                          <Pencil className="h-3 w-3 mr-1" /> Edit
+                          <Pencil className="h-3 w-3 sm:mr-1" /> 
+                          <span className="hidden sm:inline">Edit</span>
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleDelete(guest.id)}
-                          className="h-8 px-3 text-xs border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
+                          className="h-7 sm:h-8 px-2 sm:px-3 text-xs border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
                         >
-                          <Trash2 className="h-3 w-3 mr-1" /> Delete
+                          <Trash2 className="h-3 w-3 sm:mr-1" /> 
+                          <span className="hidden sm:inline">Delete</span>
                         </Button>
                       </div>
                     </TableCell>
@@ -863,30 +892,36 @@ export default function GuestPage() {
           
           {/* Pagination */}
           {meta && meta.totalPages > 1 && (
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-700">
-                  Showing {((meta.page - 1) * meta.limit) + 1} to {Math.min(meta.page * meta.limit, meta.total)} of {meta.total} results
+            <div className="px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
+                <div className="text-xs sm:text-sm text-gray-700 order-2 sm:order-1">
+                  <span className="hidden sm:inline">
+                    Showing {((meta.page - 1) * meta.limit) + 1} to {Math.min(meta.page * meta.limit, meta.total)} of {meta.total} results
+                  </span>
+                  <span className="sm:hidden">
+                    {((meta.page - 1) * meta.limit) + 1}-{Math.min(meta.page * meta.limit, meta.total)} of {meta.total}
+                  </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 order-1 sm:order-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setPage(Math.max(1, page - 1))}
                     disabled={page <= 1}
-                    className="border-gray-300"
+                    className="border-gray-300 h-8 px-3 text-xs"
                   >
-                    Previous
+                    <span className="hidden sm:inline">Previous</span>
+                    <span className="sm:hidden">Prev</span>
                   </Button>
-                  <span className="text-sm text-gray-600">
-                    Page {meta.page} of {meta.totalPages}
+                  <span className="text-xs sm:text-sm text-gray-600 px-2">
+                    {meta.page}/{meta.totalPages}
                   </span>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setPage(Math.min(meta.totalPages, page + 1))}
                     disabled={page >= meta.totalPages}
-                    className="border-gray-300"
+                    className="border-gray-300 h-8 px-3 text-xs"
                   >
                     Next
                   </Button>

@@ -17,6 +17,7 @@ model User {
   isActive         Boolean                @default(true)
   otp              String?
   otpExpires       DateTime?
+  totpSecret       String?
   ClaimTransaction ClaimTransaction[]
   events           UserEventAssociation[]
 }
