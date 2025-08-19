@@ -3,6 +3,7 @@ import { createGuest, getGuests } from "@/lib/services/guestService";
 import { jwtVerify } from "jose";
 import { apiResponse } from "@/lib/api-response";
 import { guestSchema } from "@/lib/validations";
+import { emitGuestUpdate } from "@/lib/socket";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
@@ -125,6 +126,15 @@ export async function POST(
     }
     const { eventId } = await params;
     const guest = await createGuest(eventId, validation.data);
+    
+    // Emit real-time update for guest creation
+    emitGuestUpdate({
+      guestId: guest.id,
+      eventId,
+      updatedFields: validation.data,
+      timestamp: new Date().toISOString()
+    });
+    
     return apiResponse(
       "success",
       "Guest created successfully",

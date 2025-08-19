@@ -13,7 +13,6 @@ import {
   XCircle,
   Target,
   Activity,
-  BarChart3,
   Hash,
   FileText,
   Settings,
@@ -115,8 +114,9 @@ export default function GuestCategoryPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ...data,
-          quota: parseInt(data.quota as string) || 0,
+          name: data.name,
+          description: data.description || undefined,
+          quota: data.quota ? parseInt(data.quota as string) : undefined,
           isActive: data.isActive === "on",
         }),
       });

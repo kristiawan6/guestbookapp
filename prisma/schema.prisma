@@ -33,6 +33,7 @@ model Event {
   guestCategories    GuestCategory[]
   messages           Message[]
   users              UserEventAssociation[]
+  whatsappMessages   WhatsAppMessage[]
 }
 
 model UserEventAssociation {
@@ -73,6 +74,7 @@ model Guest {
   invitationLink    String?
   qrCode            String?            @unique
   status            GuestStatus        @default(Invited)
+  whatsappStatus    WhatsAppStatus     @default(NotSent)
   createdAt         DateTime           @default(now())
   isDeleted         Boolean            @default(false)
   updatedAt         DateTime           @updatedAt
@@ -80,6 +82,7 @@ model Guest {
   event             Event              @relation(fields: [eventId], references: [id])
   guestCategory     GuestCategory?     @relation(fields: [guestCategoryId], references: [id])
   messages          Message[]
+  whatsappMessages  WhatsAppMessage[]
 
   @@unique([email, eventId])
   @@unique([phoneNumber, eventId])
@@ -147,4 +150,34 @@ enum GuestStatus {
   Invited
   Attended
   Cancelled
+}
+
+enum WhatsAppStatus {
+  NotSent
+  Sent
+  Delivered
+  Read
+  Failed
+}
+
+model WhatsAppMessage {
+  id              String          @id @default(cuid())
+  messageId       String?         @unique // WhatsApp message ID from API
+  guestId         String
+  eventId         String
+  templateName    String?
+  content         String
+  status          WhatsAppStatus  @default(Sent)
+  sentAt          DateTime        @default(now())
+  deliveredAt     DateTime?
+  readAt          DateTime?
+  failedAt        DateTime?
+  errorMessage    String?
+  webhookData     Json?           // Store raw webhook data
+  guest           Guest           @relation(fields: [guestId], references: [id])
+  event           Event           @relation(fields: [eventId], references: [id])
+  
+  @@index([messageId])
+  @@index([guestId])
+  @@index([eventId])
 }

@@ -112,9 +112,11 @@ export const getBroadcastTemplates = async (
   ]);
 
   // Map footerMessage back to footer for frontend compatibility
+  // Also map type enum to lowercase string for frontend
   const templatesForFrontend = broadcastTemplates.map((template: BroadcastTemplate) => ({
     ...template,
     footer: template.footerMessage,
+    type: template.type.toLowerCase(),
   }));
 
   return {

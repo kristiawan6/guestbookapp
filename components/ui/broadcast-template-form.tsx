@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,6 +48,8 @@ export default function BroadcastTemplateForm({
   templateType?: string;
 }) {
   const router = useRouter();
+  const { selectedEventId } = useStatistics();
+  const editorRef = useRef<any>(null);
   const [content, setContent] = useState(template?.content || "");
   const [footer, setFooter] = useState(template?.footer || "");
   const [imageAttachment, setImageAttachment] = useState(template?.imageAttachment || "none");
@@ -55,6 +57,8 @@ export default function BroadcastTemplateForm({
     template?.coordinateFields ? JSON.parse(template.coordinateFields) : []
   );
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>(template?.imageAttachment || "");
+  const [qrCardImageUrl, setQrCardImageUrl] = useState<string>("");
+  const [customImageUrl, setCustomImageUrl] = useState<string>("");
   const [imageAttachmentType, setImageAttachmentType] = useState<string>(
     template?.imageAttachmentType || "qr-card"
   );
@@ -90,27 +94,150 @@ export default function BroadcastTemplateForm({
         imageUrl = imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`;
       }
       setUploadedImageUrl(imageUrl);
+      
+      // Set appropriate image URL based on attachment type
+      if (template.imageAttachmentType === "qr-card" || template.imageAttachmentType === "dynamic-qr") {
+        setQrCardImageUrl(imageUrl);
+        setCustomImageUrl("");
+      } else if (template.imageAttachmentType === "customize") {
+        setCustomImageUrl(imageUrl);
+        setQrCardImageUrl("");
+      }
     }
   }, [template]);
+
+  const handleFileUpload = async (file: File, uploadType: 'qr-card' | 'custom'): Promise<string | null> => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Determine which upload endpoint to use based on upload type
+      const uploadEndpoint = uploadType === 'qr-card' ? '/api/upload/qr-cards' : '/api/upload';
+      
+      const response = await fetch(uploadEndpoint, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        return result.path;
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload file');
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      throw error;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
-    // Add coordinate fields to form data
-    formData.append('coordinateFields', JSON.stringify(coordinateFields));
-    formData.append('imageAttachmentType', imageAttachmentType);
+    // Handle file upload if a new file is selected
+    const qrCardFileInput = formData.get('qrCardImage') as File;
+    const customFileInput = formData.get('customImage') as File;
+    let finalImageUrl = uploadedImageUrl;
+    
+    // Handle QR card image upload
+    if (qrCardFileInput && qrCardFileInput.size > 0) {
+      try {
+        const uploadResult = await handleFileUpload(qrCardFileInput, 'qr-card');
+        if (!uploadResult) {
+          await Swal.fire({
+            icon: 'error',
+            title: 'Upload Error',
+            text: 'Failed to upload QR card image. Please try again.',
+            confirmButtonColor: '#3085d6'
+          });
+          return;
+        }
+        finalImageUrl = uploadResult;
+      } catch (error) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Upload Error',
+          text: error instanceof Error ? error.message : 'Failed to upload QR card image',
+          confirmButtonColor: '#3085d6'
+        });
+        return;
+      }
+    }
+    
+    // Handle custom image upload
+    if (customFileInput && customFileInput.size > 0) {
+      try {
+        const uploadResult = await handleFileUpload(customFileInput, 'custom');
+        if (!uploadResult) {
+          await Swal.fire({
+            icon: 'error',
+            title: 'Upload Error',
+            text: 'Failed to upload custom image. Please try again.',
+            confirmButtonColor: '#3085d6'
+          });
+          return;
+        }
+        finalImageUrl = uploadResult;
+      } catch (error) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Upload Error',
+          text: error instanceof Error ? error.message : 'Failed to upload custom image',
+          confirmButtonColor: '#3085d6'
+        });
+        return;
+      }
+    }
+    
+    // Convert FormData to JSON object (excluding the file inputs)
+    const jsonData: any = {};
+    formData.forEach((value, key) => {
+      if (key !== 'qrCardImage' && key !== 'customImage') { // Skip the file inputs
+        jsonData[key] = value;
+      }
+    });
+    
+    // Add additional fields
+    jsonData.coordinateFields = JSON.stringify(coordinateFields);
+    jsonData.imageAttachmentType = imageAttachmentType;
+    jsonData.content = content;
+    jsonData.footer = footer;
+    jsonData.type = templateType === "whatsapp" ? "WhatsApp" : "Email";
+    
+    // Set the final image URL based on attachment type
+    if (imageAttachment === "customize" && (finalImageUrl || customImageUrl)) {
+      jsonData.imageAttachment = finalImageUrl || customImageUrl;
+    } else if (imageAttachment === "qr-card" && (finalImageUrl || qrCardImageUrl)) {
+      jsonData.imageAttachment = finalImageUrl || qrCardImageUrl;
+    } else if (imageAttachment !== "customize" && imageAttachment !== "qr-card") {
+      jsonData.imageAttachment = imageAttachment;
+    }
     
     try {
+      if (!selectedEventId) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No event selected. Please select an event first.',
+          confirmButtonColor: '#3085d6'
+        });
+        return;
+      }
+
       const url = template 
-        ? `/api/broadcast-template/${template.id}` 
-        : '/api/broadcast-template';
+        ? `/api/events/${selectedEventId}/broadcast-templates/${template.id}` 
+        : `/api/events/${selectedEventId}/broadcast-templates`;
       
       const method = template ? 'PUT' : 'POST';
       
       const response = await fetch(url, {
         method,
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(jsonData),
       });
 
       if (response.ok) {
@@ -143,7 +270,67 @@ export default function BroadcastTemplateForm({
 
   const handleVariableClick = (variable: string) => {
     const formattedVariable = variable.replace(/ \/ /g, "_").replace(/ /g, "_");
-    setContent(content + `*##_${formattedVariable.toUpperCase()}_##*`);
+    const variableText = `*##_${formattedVariable.toUpperCase()}_##*`;
+    
+    // If editor instance is available, insert at cursor position
+    if (editorRef.current) {
+      try {
+        // Focus the editor first to ensure cursor position is available <mcreference link="https://stackoverflow.com/questions/71683827/suneditor-inserthtml" index="1">1</mcreference>
+        editorRef.current.focus();
+        // Use insertHTML to insert at cursor position <mcreference link="https://stackoverflow.com/questions/75687522/how-to-insert-custom-html-at-the-cursors-position-in-suneditor" index="2">2</mcreference>
+        editorRef.current.insertHTML(variableText, true, true);
+      } catch (error) {
+        // Fallback to appending if insertHTML fails
+        console.warn('Failed to insert at cursor position, falling back to append:', error);
+        setContent(content + variableText);
+      }
+    } else {
+      // Fallback to appending if editor ref is not available
+      setContent(content + variableText);
+    }
+  };
+
+  // Get SunEditor instance when it's ready
+  const getSunEditorInstance = (sunEditor: any) => {
+    editorRef.current = sunEditor;
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Create a preview URL for the selected file
+      const previewUrl = URL.createObjectURL(file);
+      setUploadedImageUrl(previewUrl);
+      
+      // Set appropriate image URL based on current attachment type
+      if (imageAttachment === 'qr-card') {
+        setQrCardImageUrl(previewUrl);
+        setCustomImageUrl("");
+      } else if (imageAttachment === 'customize') {
+        setCustomImageUrl(previewUrl);
+        setQrCardImageUrl("");
+      }
+    }
+  };
+
+  const handleQrCardFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const previewUrl = URL.createObjectURL(file);
+      setQrCardImageUrl(previewUrl);
+      setUploadedImageUrl(previewUrl);
+      setCustomImageUrl(""); // Clear custom image when QR card image is selected
+    }
+  };
+
+  const handleCustomFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const previewUrl = URL.createObjectURL(file);
+      setCustomImageUrl(previewUrl);
+      setUploadedImageUrl(previewUrl);
+      setQrCardImageUrl(""); // Clear QR card image when custom image is selected
+    }
   };
 
   return (
@@ -256,6 +443,7 @@ export default function BroadcastTemplateForm({
                     <SunEditor
                       setContents={content}
                       onChange={setContent}
+                      getSunEditorInstance={getSunEditorInstance}
                       setOptions={{
                          height: "300",
                         buttonList: [
@@ -313,7 +501,15 @@ export default function BroadcastTemplateForm({
                 <div className="space-y-4">
                   <RadioGroup
                     value={imageAttachment}
-                    onValueChange={setImageAttachment}
+                    onValueChange={(value) => {
+                      setImageAttachment(value);
+                      // Set imageAttachmentType based on selection
+                      if (value === "customize") {
+                        setImageAttachmentType("customize");
+                      } else if (value === "qr-card") {
+                        setImageAttachmentType("qr-card");
+                      }
+                    }}
                     className="grid grid-cols-1 md:grid-cols-3 gap-4"
                   >
                     <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-gray-50">
@@ -370,16 +566,45 @@ export default function BroadcastTemplateForm({
                         </div>
 
                         {imageAttachmentType === "dynamic-qr" && (
-                          <div className="mt-4">
-                            <Label className="text-blue-800 font-medium mb-2 block">
-                              Configure Dynamic Fields
-                            </Label>
-                            <CoordinatePicker
-                              imageUrl={uploadedImageUrl}
-                              fields={coordinateFields}
-                              onFieldsChange={setCoordinateFields}
-                              availableFields={GUEST_FIELDS}
-                            />
+                          <div className="mt-4 space-y-4">
+                            <div>
+                              <Label className="text-blue-800 font-medium mb-2 block">
+                                Upload QR Card Template Image
+                              </Label>
+                              {qrCardImageUrl && (
+                                <div className="mb-4 p-4 bg-white rounded-lg border border-blue-200">
+                                  <p className="text-sm text-blue-600 mb-3 font-medium">QR Card Image Preview:</p>
+                                  <div className="flex justify-center">
+                                    <img 
+                                      src={qrCardImageUrl} 
+                                      alt="QR card template preview" 
+                                      className="max-w-md max-h-64 object-contain border rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                                      onClick={() => window.open(qrCardImageUrl, '_blank')}
+                                    />
+                                  </div>
+                                  <p className="text-xs text-blue-500 mt-2 text-center">Click image to view full size</p>
+                                </div>
+                              )}
+                              <Input
+                                type="file"
+                                name="qrCardImage"
+                                className="mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                accept="image/png, image/jpeg, image/jpg, image/heic"
+                                onChange={handleQrCardFileChange}
+                              />
+                              <p className="text-xs text-blue-600 mt-1">Upload a template image for your Dynamic QR card. This image will be used as the base for coordinate mapping.</p>
+                            </div>
+                            <div>
+                              <Label className="text-blue-800 font-medium mb-2 block">
+                                Configure Dynamic Fields
+                              </Label>
+                              <CoordinatePicker
+                                imageUrl={qrCardImageUrl || uploadedImageUrl}
+                                fields={coordinateFields}
+                                onFieldsChange={setCoordinateFields}
+                                availableFields={GUEST_FIELDS}
+                              />
+                            </div>
                           </div>
                         )}
                       </div>
@@ -391,15 +616,15 @@ export default function BroadcastTemplateForm({
                       <Label className="text-gray-600 font-medium mb-3 block">
                         Upload your custom image here
                       </Label>
-                      {uploadedImageUrl && (
+                      {customImageUrl && (
                         <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
-                          <p className="text-sm text-gray-600 mb-3 font-medium">Image Preview:</p>
+                          <p className="text-sm text-gray-600 mb-3 font-medium">Custom Image Preview:</p>
                           <div className="flex justify-center">
                             <img 
-                              src={uploadedImageUrl} 
-                              alt="Template image preview" 
+                              src={customImageUrl} 
+                              alt="Custom template image preview" 
                               className="max-w-md max-h-64 object-contain border rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                              onClick={() => window.open(uploadedImageUrl, '_blank')}
+                              onClick={() => window.open(customImageUrl, '_blank')}
                             />
                           </div>
                           <p className="text-xs text-gray-500 mt-2 text-center">Click image to view full size</p>
@@ -407,10 +632,12 @@ export default function BroadcastTemplateForm({
                       )}
                       <Input
                         type="file"
-                        name="image"
+                        name="customImage"
                         className="mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                        accept="image/png, image/jpeg, image/jpg"
+                        accept="image/png, image/jpeg, image/jpg, image/heic"
+                        onChange={handleCustomFileChange}
                       />
+                      <p className="text-xs text-gray-600 mt-1">Upload a custom image for your broadcast template. This image will be sent with your messages.</p>
                     </div>
                   )}
                 </div>

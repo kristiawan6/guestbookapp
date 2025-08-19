@@ -62,9 +62,8 @@ export const toastService = {
     messages: {
       loading: string;
       success: string | ((data: T) => string);
-      error: string | ((error: any) => string);
-    },
-    options?: { duration?: number }
+      error: string | ((error: unknown) => string);
+    }
   ) => {
     return toast.promise(promise, {
       loading: messages.loading,

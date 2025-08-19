@@ -6,6 +6,7 @@ import {
 import { jwtVerify } from "jose";
 import { apiResponse } from "@/lib/api-response";
 import { guestSchema } from "@/lib/validations";
+import { emitGuestUpdate } from "@/lib/socket";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
@@ -41,7 +42,7 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-k
  */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ guestId: string }> }
+  { params }: { params: Promise<{ guestId: string; eventId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -56,8 +57,17 @@ export async function PUT(
     if (!validation.success) {
       return apiResponse("error", "Invalid input", null, validation.error.errors, null, 400);
     }
-    const { guestId } = await params;
+    const { guestId, eventId } = await params;
     const guest = await updateGuest(guestId, validation.data);
+    
+    // Emit real-time update for guest modification
+    emitGuestUpdate({
+      guestId,
+      eventId,
+      updatedFields: validation.data,
+      timestamp: new Date().toISOString()
+    });
+    
     return apiResponse(
       "success",
       "Guest updated successfully",
@@ -100,7 +110,7 @@ export async function PUT(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ guestId: string }> }
+  { params }: { params: Promise<{ guestId: string; eventId: string }> }
 ) {
   const token = req.cookies.get("token")?.value;
 
@@ -110,8 +120,17 @@ export async function DELETE(
 
   try {
     await jwtVerify(token, secret);
-    const { guestId } = await params;
+    const { guestId, eventId } = await params;
     await deleteGuest(guestId);
+    
+    // Emit real-time update for guest deletion
+    emitGuestUpdate({
+      guestId,
+      eventId,
+      updatedFields: { deleted: true },
+      timestamp: new Date().toISOString()
+    });
+    
     return apiResponse(
       "success",
       "Guest deleted successfully",

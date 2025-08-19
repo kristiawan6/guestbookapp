@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { hash } from "bcrypt";
-import { UserRole, User, Event } from "@prisma/client";
+import { UserRole } from "@prisma/client";
 
 
 interface UserData {

@@ -8,6 +8,9 @@ export const eventSchema = z.object({
 
 export const guestCategorySchema = z.object({
   name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+  quota: z.number().int().min(0, "Quota must be a non-negative number").optional(),
+  isActive: z.boolean().optional(),
 });
 
 export const guestSchema = z.object({

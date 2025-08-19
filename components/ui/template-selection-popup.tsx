@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, MessageSquare, Mail, Sparkles, Users, Eye, CheckCircle } from "lucide-react";
+import { Loader2, MessageSquare, Mail, Sparkles, Users, CheckCircle } from "lucide-react";
 import { useStatistics } from "@/hooks/use-statistics";
 
 interface BroadcastTemplate {
@@ -23,6 +23,8 @@ interface BroadcastTemplate {
   footerMessage?: string;
   button?: string;
   imageAttachment?: string;
+  imageAttachmentType?: string;
+  coordinateFields?: string;
 }
 
 interface TemplateSelectionPopupProps {
@@ -42,12 +44,15 @@ export function TemplateSelectionPopup({
 }: TemplateSelectionPopupProps) {
   const [templates, setTemplates] = useState<BroadcastTemplate[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<BroadcastTemplate | null>(null);
+  const [sending, setSending] = useState(false);
   const { selectedEventId } = useStatistics();
 
   useEffect(() => {
     if (isOpen && selectedEventId) {
       fetchTemplates();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, selectedEventId, type]);
 
   const fetchTemplates = async () => {
@@ -66,7 +71,26 @@ export function TemplateSelectionPopup({
   };
 
   const handleTemplateSelect = (template: BroadcastTemplate) => {
-    onSelectTemplate(template);
+    setSelectedTemplate(template);
+  };
+
+  const handleSendEmail = async () => {
+    if (!selectedTemplate) return;
+    
+    setSending(true);
+    try {
+      await onSelectTemplate(selectedTemplate);
+      onClose();
+      setSelectedTemplate(null);
+    } catch (error) {
+      console.error('Error sending email:', error);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleClose = () => {
+    setSelectedTemplate(null);
     onClose();
   };
 
@@ -80,7 +104,7 @@ export function TemplateSelectionPopup({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] p-0 overflow-hidden">
+      <DialogContent className="max-w-6xl max-h-[95vh] h-[95vh] p-0 overflow-hidden z-[60] bg-white flex flex-col">
         <div className={`bg-gradient-to-r p-6 text-white ${
           type === "WhatsApp" 
             ? "from-green-500 to-emerald-600" 
@@ -113,7 +137,7 @@ export function TemplateSelectionPopup({
           </DialogHeader>
         </div>
 
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+        <div className="p-6 overflow-y-auto flex-1 min-h-0">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="relative">
@@ -149,10 +173,14 @@ export function TemplateSelectionPopup({
               {templates.map((template) => (
                 <Card
                   key={template.id}
-                  className={`group cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 border-2 hover:border-opacity-100 ${
-                    type === "WhatsApp" 
-                      ? "hover:border-green-400 hover:shadow-green-100" 
-                      : "hover:border-blue-400 hover:shadow-blue-100"
+                  className={`group cursor-pointer transition-all duration-200 ease-in-out hover:shadow-lg hover:scale-[1.02] border-2 relative ${
+                    selectedTemplate?.id === template.id
+                      ? type === "WhatsApp"
+                        ? "border-green-500 shadow-green-200 bg-green-50 scale-[1.02]"
+                        : "border-blue-500 shadow-blue-200 bg-blue-50 scale-[1.02]"
+                      : type === "WhatsApp" 
+                        ? "border-gray-200 hover:border-green-400 hover:shadow-green-100" 
+                        : "border-gray-200 hover:border-blue-400 hover:shadow-blue-100"
                   }`}
                   onClick={() => handleTemplateSelect(template)}
                 >
@@ -191,26 +219,48 @@ export function TemplateSelectionPopup({
                     
                     {/* Template Preview */}
                     <div className="p-4">
-                      {template.imageAttachment && (
+                      {/* QR Code Card Preview */}
+                      {(template.imageAttachmentType === "qr-card" || template.imageAttachmentType === "dynamic-qr" || 
+                        template.imageAttachment === "qr-code-card" || template.imageAttachment === "qr-card") && (
                         <div className="mb-4">
-                          {template.imageAttachment === "qr-code-card" ? (
-                            <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg p-4 text-center border-2 border-dashed border-gray-300">
-                              <div className="bg-white rounded p-2 inline-block mb-2">
-                                <div className="w-8 h-8 bg-gray-800 rounded"></div>
-                              </div>
-                              <div className="text-xs font-medium text-gray-700">QR Code Card</div>
-                              <div className="text-xs text-gray-500">Dynamic Template</div>
+                          <div className="bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg p-4 text-center border-2 border-dashed border-gray-300">
+                            <div className="bg-white rounded p-2 inline-block mb-2">
+                              <div className="w-8 h-8 bg-gray-800 rounded"></div>
                             </div>
-                          ) : (
-                            <div className="relative overflow-hidden rounded-lg">
-                              <img
-                                src={template.imageAttachment}
-                                alt="Template preview"
-                                className="w-full h-24 object-cover group-hover:scale-110 transition-transform duration-300"
-                              />
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300"></div>
+                            <div className="text-xs font-medium text-gray-700">QR Code Card</div>
+                            <div className="text-xs text-gray-500">
+                              {template.imageAttachmentType === "dynamic-qr" ? "Dynamic Template" : "Standard Template"}
                             </div>
-                          )}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Regular Image Attachment Preview */}
+                      {template.imageAttachment && 
+                       template.imageAttachment !== "none" && 
+                       template.imageAttachment !== "qr-code-card" && 
+                       template.imageAttachment !== "qr-card" && 
+                       template.imageAttachment !== "customize" && 
+                       template.imageAttachmentType !== "qr-card" && 
+                       template.imageAttachmentType !== "dynamic-qr" && (
+                        <div className="mb-4">
+                          <div className="relative overflow-hidden rounded-lg">
+                            <img
+                              src={template.imageAttachment}
+                              alt="Template preview"
+                              className="w-full h-24 object-cover group-hover:scale-105 transition-transform duration-200 ease-out"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                // Show a fallback placeholder
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  parent.innerHTML = '<div class="flex items-center justify-center h-24 text-gray-400 bg-gray-100 rounded"><svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path></svg></div>';
+                                }
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-transparent group-hover:bg-black/5 transition-colors duration-200"></div>
+                          </div>
                         </div>
                       )}
                       
@@ -229,13 +279,15 @@ export function TemplateSelectionPopup({
                     </div>
                     
                     {/* Action Overlay */}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <div className={`bg-white rounded-full p-3 shadow-lg transform scale-75 group-hover:scale-100 transition-transform duration-300 ${
+                    <div className="absolute inset-0 bg-transparent group-hover:bg-black/5 transition-colors duration-200 flex items-center justify-center pointer-events-none">
+                      <div className={`bg-white rounded-full p-2 shadow-md transform scale-0 group-hover:scale-100 transition-transform duration-200 ease-out ${
+                        selectedTemplate?.id === template.id ? 'scale-100' : ''
+                      } ${
                         type === "WhatsApp" 
                           ? "text-green-600" 
                           : "text-blue-600"
                       }`}>
-                        <CheckCircle className="h-6 w-6" />
+                        <CheckCircle className="h-5 w-5" />
                       </div>
                     </div>
                   </CardContent>
@@ -245,18 +297,39 @@ export function TemplateSelectionPopup({
           )}
         </div>
 
-        <DialogFooter className="bg-gray-50 px-6 py-4 border-t">
+        <DialogFooter className="bg-gray-50 px-6 py-4 border-t flex-shrink-0">
           <div className="flex items-center justify-between w-full">
             <div className="text-sm text-gray-600">
-              Click on a template to select and continue
+              {selectedTemplate ? `Selected: ${selectedTemplate.name}` : 'Select a template to continue'}
             </div>
-            <Button 
-              variant="outline" 
-              onClick={onClose}
-              className="hover:bg-gray-100"
-            >
-              Cancel
-            </Button>
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={handleClose}
+                className="hover:bg-gray-100"
+                disabled={sending}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSendEmail}
+                disabled={!selectedTemplate || sending}
+                className={`${
+                  type === "WhatsApp"
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-blue-600 hover:bg-blue-700"
+                } text-white`}
+              >
+                {sending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  `Send ${type}`
+                )}
+              </Button>
+            </div>
           </div>
         </DialogFooter>
       </DialogContent>

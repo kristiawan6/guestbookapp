@@ -118,6 +118,8 @@ export default function GuestPage() {
   const [isQRCardGeneratorOpen, setIsQRCardGeneratorOpen] = useState(false);
   const [isIndividualEmailTemplateOpen, setIsIndividualEmailTemplateOpen] = useState(false);
   const [individualEmailGuest, setIndividualEmailGuest] = useState<Guest | null>(null);
+  const [isIndividualWhatsAppTemplateOpen, setIsIndividualWhatsAppTemplateOpen] = useState(false);
+  const [individualWhatsAppGuest, setIndividualWhatsAppGuest] = useState<Guest | null>(null);
 
   const fetchGuests = useCallback(() => {
     if (selectedEventId) {
@@ -241,6 +243,19 @@ export default function GuestPage() {
     setIsIndividualEmailTemplateOpen(true);
   };
 
+  // Individual guest WhatsApp handler
+  const handleSendIndividualWhatsApp = async (guest: any) => {
+    if (!guest.phoneNumber) {
+      Swal.fire("No Phone Number", "This guest doesn't have a phone number.", "warning");
+      return;
+    }
+
+    // Open template selection popup for individual WhatsApp
+    setIndividualWhatsAppGuest(guest);
+    setTemplateType("WhatsApp");
+    setIsIndividualWhatsAppTemplateOpen(true);
+  };
+
   const handleTemplateSelect = async (template: any) => {
     try {
       const response = await fetch('/api/guests/send-bulk', {
@@ -287,9 +302,7 @@ export default function GuestPage() {
         },
         body: JSON.stringify({
           guestIds: [individualEmailGuest.id],
-          subject: template.subject || 'Event Invitation',
-          message: template.content || 'You are invited to our event!',
-          templateImageUrl: template.imageAttachment || '',
+          templateId: template.id,
           eventId: selectedEventId,
         }),
       });
@@ -316,6 +329,50 @@ export default function GuestPage() {
       Swal.fire(
         "Error!", 
         `Failed to send email: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+        "error"
+      );
+    }
+  };
+
+  const handleIndividualWhatsAppTemplateSelect = async (template: any) => {
+    if (!individualWhatsAppGuest) return;
+
+    try {
+      // Use the dedicated send-whatsapp endpoint for individual WhatsApp messages
+      const response = await fetch('/api/guests/send-whatsapp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          guestId: individualWhatsAppGuest.id,
+          templateId: template.id,
+          eventId: selectedEventId,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          Swal.fire(
+            "WhatsApp Sent!", 
+            `WhatsApp message successfully sent to ${individualWhatsAppGuest.phoneNumber}`, 
+            "success"
+          );
+        } else {
+          throw new Error(result.error || 'Failed to send WhatsApp message');
+        }
+        setIsIndividualWhatsAppTemplateOpen(false);
+        setIndividualWhatsAppGuest(null);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || errorData.error || 'Failed to send WhatsApp message');
+      }
+    } catch (error) {
+      console.error('Individual WhatsApp error:', error);
+      Swal.fire(
+        "Error!", 
+        `Failed to send WhatsApp message: ${error instanceof Error ? error.message : 'Unknown error'}`, 
         "error"
       );
     }
@@ -1170,7 +1227,10 @@ export default function GuestPage() {
                         </SelectContent>
                       </Select>
                       <div className="flex gap-2 mt-4">
-                        <Button variant="outline">
+                        <Button 
+                          variant="outline"
+                          onClick={() => selectedGuest && handleSendIndividualWhatsApp(selectedGuest)}
+                        >
                           <MessageSquare className="mr-2 h-4 w-4" /> Send by
                           Whatsapp
                         </Button>
@@ -1247,6 +1307,18 @@ export default function GuestPage() {
         onSelectTemplate={handleIndividualTemplateSelect}
         type="Email"
         selectedGuestIds={individualEmailGuest ? [individualEmailGuest.id] : []}
+      />
+      
+      {/* Template Selection Popup for Individual WhatsApp */}
+      <TemplateSelectionPopup
+        isOpen={isIndividualWhatsAppTemplateOpen}
+        onClose={() => {
+          setIsIndividualWhatsAppTemplateOpen(false);
+          setIndividualWhatsAppGuest(null);
+        }}
+        onSelectTemplate={handleIndividualWhatsAppTemplateSelect}
+        type="WhatsApp"
+        selectedGuestIds={individualWhatsAppGuest ? [individualWhatsAppGuest.id] : []}
       />
       
       {/* QR Card Generator */}

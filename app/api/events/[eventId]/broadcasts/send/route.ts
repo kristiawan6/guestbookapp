@@ -78,7 +78,7 @@ export async function POST(
         console.log("Processing QR code card template for email broadcast");
         
         // Get full guest data for QR code processing based on recipient type
-        let guestWhereClause: any = {
+        const guestWhereClause: any = {
           eventId: (await params).eventId,
           email: { not: null },
           qrCode: { not: null }

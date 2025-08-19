@@ -1,6 +1,5 @@
 import sharp from 'sharp';
 import { toDataURL } from 'qrcode';
-import prisma from '@/lib/prisma';
 
 // Define Guest type based on Prisma schema
 type Guest = {
@@ -63,7 +62,7 @@ export class ImageProcessingService {
   private async generateQRCodeBuffer(
     guestData: Guest,
     width: number = 200,
-    height: number = 200
+    _height: number = 200 // eslint-disable-line @typescript-eslint/no-unused-vars
   ): Promise<Buffer> {
     try {
       // Create QR code data with guest information
@@ -141,7 +140,7 @@ export class ImageProcessingService {
       // Get template metadata
       const templateMetadata = await sharp(blankTemplateBuffer).metadata();
       const templateWidth = templateMetadata.width || 400;
-      const templateHeight = templateMetadata.height || 600;
+      const _templateHeight = templateMetadata.height || 600; // eslint-disable-line @typescript-eslint/no-unused-vars
 
       // Generate QR code buffer
       const qrCodeBuffer = await this.generateQRCodeBuffer(

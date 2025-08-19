@@ -59,7 +59,7 @@ export function QRCardGenerator({
       const data = await response.json();
       // Filter templates that have QR code card
       const qrTemplates = (data.data || []).filter(
-        (template: BroadcastTemplate) => template.imageAttachment === "qr-code-card"
+        (template: BroadcastTemplate) => template.imageAttachment === "qr-code-card" || template.imageAttachment === "qr-card"
       );
       setTemplates(qrTemplates);
     } catch (error) {

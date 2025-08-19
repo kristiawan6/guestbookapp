@@ -5,9 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, Upload, Download, Eye, Users } from 'lucide-react';
+import { Loader2, Upload, Download, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
 
@@ -36,7 +34,7 @@ interface QRTemplateProcessorProps {
 
 export function QRTemplateProcessor({ 
   templateId, 
-  eventId, 
+  eventId, // eslint-disable-line @typescript-eslint/no-unused-vars
   guests, 
   blankTemplateUrl 
 }: QRTemplateProcessorProps) {

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { jwtVerify } from "jose";
 import prisma from "@/lib/prisma";
 import { sendWhatsAppMessage } from "@/lib/services/whatsappService";
 import { sendEmail, sendEmailWithQRCard } from "@/lib/services/emailService";
@@ -7,18 +6,10 @@ import { imageProcessingService } from "../../../../src/services/imageProcessing
 import { writeFile, mkdir, readFile } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
-
-const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
+import { replaceEmailVariables, replaceTemplateVariables, type GuestData } from "@/lib/utils/templateVariables";
 
 export async function POST(req: NextRequest) {
-  const token = req.cookies.get("token")?.value;
-
-  if (!token) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
-
   try {
-    await jwtVerify(token, secret);
     const body = await req.json();
     const { templateId, guestIds, type, eventId } = body;
 
@@ -42,19 +33,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get the selected guests
+    // Get the selected guests with all necessary fields for variable replacement
     const guests = await prisma.guest.findMany({
       where: {
         eventId: eventId,
         id: { in: guestIds },
       },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phoneNumber: true,
-        qrCode: true,
-      },
+      include: {
+        guestCategory: {
+          select: {
+            name: true
+          }
+        },
+        event: {
+          select: {
+            name: true
+          }
+        }
+      }
     });
 
     if (guests.length === 0) {
@@ -73,11 +69,22 @@ export async function POST(req: NextRequest) {
       for (const guest of guests) {
         if (guest.phoneNumber) {
           try {
-            // Personalize the message with guest name
-            const personalizedContent = template.content.replace(
-              /\{\{name\}\}/g,
-              guest.name
-            );
+            // Personalize the message with comprehensive variable replacement
+            const guestData: GuestData = {
+              id: guest.id,
+              name: guest.name,
+              email: guest.email,
+              phoneNumber: guest.phoneNumber,
+              address: guest.address,
+              numberOfGuests: guest.numberOfGuests,
+              session: guest.session,
+              tableNumber: guest.tableNumber,
+              notes: guest.notes,
+              guestCategory: guest.guestCategory,
+              event: guest.event
+            };
+            
+            const personalizedContent = replaceTemplateVariables(template.content, guestData);
             
             await sendWhatsAppMessage(guest.phoneNumber, personalizedContent);
             successCount++;
@@ -100,15 +107,26 @@ export async function POST(req: NextRequest) {
       for (const guest of guests) {
         if (guest.email) {
           try {
-            // Personalize the message with guest name
-            const personalizedContent = template.content.replace(
-              /\{\{name\}\}/g,
-              guest.name
+            // Personalize the message and subject with comprehensive variable replacement
+            const guestData: GuestData = {
+              id: guest.id,
+              name: guest.name,
+              email: guest.email,
+              phoneNumber: guest.phoneNumber,
+              address: guest.address,
+              numberOfGuests: guest.numberOfGuests,
+              session: guest.session,
+              tableNumber: guest.tableNumber,
+              notes: guest.notes,
+              guestCategory: guest.guestCategory,
+              event: guest.event
+            };
+            
+            const { subject: personalizedSubject, content: personalizedContent } = replaceEmailVariables(
+              template.subject || template.name,
+              template.content,
+              guestData
             );
-            const personalizedSubject = template.subject?.replace(
-              /\{\{name\}\}/g,
-              guest.name
-            ) || template.name;
             
             // Check if guest has QR code and template has image for QR card generation
             if (guest.qrCode && template.imageAttachment) {
@@ -134,7 +152,7 @@ export async function POST(req: NextRequest) {
               }
 
               // Parse coordinate fields from template or use defaults
-              let coordinateConfig: any = {
+              const coordinateConfig: any = {
                 qrCodePosition: {
                   x: 200,
                   y: 450,

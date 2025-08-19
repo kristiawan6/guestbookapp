@@ -54,10 +54,14 @@ export const createGuest = async (eventId: string, data: GuestData) => {
   });
 
   const qrCode = await generateQrCode(guest.id);
-  // In a real app, you'd likely store the QR code or a reference to it.
-  // For now, we'll just return it.
+  
+  // Update the guest with the generated QR code
+  const updatedGuest = await prisma.guest.update({
+    where: { id: guest.id },
+    data: { qrCode },
+  });
 
-  return { ...guest, qrCode };
+  return updatedGuest;
 };
 
 export const getGuests = async (
@@ -214,12 +218,28 @@ export const importGuests = async (eventId: string, file: Buffer) => {
     })
   );
 
-  await prisma.guest.createMany({
-    data: guestsToCreate,
-    skipDuplicates: true, // This is redundant now but kept for safety
-  });
+  // Create guests individually to generate QR codes for each
+  const createdGuests = [];
+  for (const guestData of guestsToCreate) {
+    const guest = await prisma.guest.create({
+      data: guestData,
+    });
+    
+    // Generate and save QR code for each guest
+    const qrCode = await generateQrCode(guest.id);
+    const updatedGuest = await prisma.guest.update({
+      where: { id: guest.id },
+      data: { qrCode },
+    });
+    
+    createdGuests.push(updatedGuest);
+  }
 
-  return { message: "Guests imported successfully" };
+  return { 
+    message: "Guests imported successfully", 
+    count: createdGuests.length,
+    guests: createdGuests 
+  };
 };
 
 export const exportGuests = async (eventId: string) => {

@@ -13,13 +13,17 @@ export const sendOtpEmail = async (
 ): Promise<boolean> => {
   try {
     if (!process.env.RESEND_API_KEY) {
-      console.error('Email service not configured. Please set RESEND_API_KEY environment variable.');
-      console.log(`Simulating OTP email send to ${to}: Subject: ${subject}, OTP: ${otp}`);
+      console.error(
+        "Email service not configured. Please set RESEND_API_KEY environment variable."
+      );
+      console.log(
+        `Simulating OTP email send to ${to}: Subject: ${subject}, OTP: ${otp}`
+      );
       return true; // Return true for development/testing purposes
     }
 
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || "onboarding@resend.dev",
+      from: process.env.EMAIL_FROM || "no-reply@williamkristiawan.site",
       to,
       subject,
       react: OtpEmail({ otp }) as React.ReactElement,
@@ -48,30 +52,42 @@ export const sendEmail = async (
 ): Promise<boolean> => {
   try {
     if (!process.env.RESEND_API_KEY) {
-      console.error('Email service not configured. Please set RESEND_API_KEY environment variable.');
-      console.log(`Simulating email send to ${to}: Subject: ${subject}, Message: ${message}`);
+      console.error(
+        "Email service not configured. Please set RESEND_API_KEY environment variable."
+      );
+      console.log(
+        `Simulating email send to ${to}: Subject: ${subject}, Message: ${message}`
+      );
       if (attachments) {
-        console.log(`Attachments: ${attachments.map(a => a.filename).join(', ')}`);
+        console.log(
+          `Attachments: ${attachments.map((a) => a.filename).join(", ")}`
+        );
       }
       return true; // Return true for development/testing purposes
     }
 
-    const emailData: any = {
-      from: process.env.EMAIL_FROM || "onboarding@resend.dev",
+    const emailData: {
+      from: string;
+      to: string;
+      subject: string;
+      react: React.ReactElement;
+      attachments?: EmailAttachment[];
+    } = {
+      from: process.env.EMAIL_FROM || "no-reply@williamkristiawan.site",
       to,
       subject,
       react: BroadcastEmail({ message }) as React.ReactElement,
     };
 
-  if (attachments && attachments.length > 0) {
-    emailData.attachments = attachments
-      .filter(att => att.content) // hanya ambil yang punya base64 content
-      .map(att => ({
-        filename: att.filename,
-        content: att.content, // wajib base64
-        contentType: att.contentType,
-      }));
-  }
+    if (attachments && attachments.length > 0) {
+      emailData.attachments = attachments
+        .filter((att) => att.content) // hanya ambil yang punya base64 content
+        .map((att) => ({
+          filename: att.filename,
+          content: att.content, // wajib base64
+          contentType: att.contentType,
+        }));
+    }
 
     await resend.emails.send(emailData);
     return true;
@@ -91,19 +107,21 @@ export const sendEmailWithQRCard = async (
 ): Promise<boolean> => {
   try {
     console.log(`Reading QR card image from: ${qrCardImagePath}`);
-    const fs = await import('fs/promises');
-    
+    const fs = await import("fs/promises");
+
     // Read the QR card image and convert to base64
     const imageBuffer = await fs.readFile(qrCardImagePath);
-    const base64Image = imageBuffer.toString('base64');
-    console.log(`QR card image read successfully, size: ${imageBuffer.length} bytes`);
-    
+    const base64Image = imageBuffer.toString("base64");
+    console.log(
+      `QR card image read successfully, size: ${imageBuffer.length} bytes`
+    );
+
     const attachment: EmailAttachment = {
       content: base64Image,
-      filename: `qr-card-${guestName.replace(/\s+/g, '-').toLowerCase()}.png`,
-      contentType: 'image/png'
+      filename: `qr-card-${guestName.replace(/\s+/g, "-").toLowerCase()}.png`,
+      contentType: "image/png",
     };
-    
+
     console.log(`Sending email with attachment: ${attachment.filename}`);
     const result = await sendEmail(to, subject, message, [attachment]);
     console.log(`Email with QR card sent successfully: ${result}`);

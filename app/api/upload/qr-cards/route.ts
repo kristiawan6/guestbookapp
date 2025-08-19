@@ -29,15 +29,15 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const uploadsDir = join(process.cwd(), "public", "uploads");
+    const qrCardsDir = join(process.cwd(), "public", "qr-cards");
     try {
-      await stat(uploadsDir);
+      await stat(qrCardsDir);
     } catch (error: unknown) {
       const e = error as { code?: string };
       if (e.code === "ENOENT") {
-        await mkdir(uploadsDir, { recursive: true });
+        await mkdir(qrCardsDir, { recursive: true });
       } else {
-        console.error("Error checking uploads directory:", error);
+        console.error("Error checking qr-cards directory:", error);
         return NextResponse.json(
           { success: false, error: "Internal Server Error" },
           { status: 500 }
@@ -45,13 +45,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const path = join(uploadsDir, file.name);
+    // Generate unique filename with timestamp to avoid conflicts
+    const timestamp = Date.now();
+    const fileExtension = file.name.split('.').pop() || 'jpg';
+    const uniqueFileName = `qr-template-${timestamp}.${fileExtension}`;
+    const path = join(qrCardsDir, uniqueFileName);
+    
     await writeFile(path, buffer);
-    console.log(`open ${path} to see the uploaded file`);
+    console.log(`QR template uploaded to ${path}`);
 
-    return NextResponse.json({ success: true, path: `/uploads/${file.name}` });
+    return NextResponse.json({ success: true, path: `/qr-cards/${uniqueFileName}` });
   } catch (error) {
-    console.error("Error uploading file:", error);
+    console.error("Error uploading QR template:", error);
     return NextResponse.json(
       { success: false, error: "Internal Server Error" },
       { status: 500 }

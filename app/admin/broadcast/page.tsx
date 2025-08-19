@@ -33,6 +33,28 @@ export default function BroadcastTemplatePage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState<Meta | null>(null);
+  const [whatsappCount, setWhatsappCount] = useState(0);
+  const [emailCount, setEmailCount] = useState(0);
+
+  const fetchTemplateCounts = useCallback(() => {
+    if (selectedEventId) {
+      // Fetch WhatsApp template count
+      fetch(`/api/events/${selectedEventId}/broadcast-templates?type=whatsapp&limit=1`)
+        .then((res) => res.json())
+        .then((data) => {
+          setWhatsappCount(data.meta?.total || 0);
+        })
+        .catch(() => setWhatsappCount(0));
+      
+      // Fetch Email template count
+      fetch(`/api/events/${selectedEventId}/broadcast-templates?type=email&limit=1`)
+        .then((res) => res.json())
+        .then((data) => {
+          setEmailCount(data.meta?.total || 0);
+        })
+        .catch(() => setEmailCount(0));
+    }
+  }, [selectedEventId]);
 
   const fetchTemplates = useCallback(() => {
     if (selectedEventId) {
@@ -50,8 +72,15 @@ export default function BroadcastTemplatePage() {
   useEffect(() => {
     if (selectedEventId) {
       fetchTemplates();
+      fetchTemplateCounts();
     }
-  }, [fetchTemplates, selectedEventId]);
+  }, [fetchTemplates, fetchTemplateCounts, selectedEventId]);
+
+  useEffect(() => {
+    if (selectedEventId) {
+      fetchTemplateCounts();
+    }
+  }, [fetchTemplateCounts, selectedEventId]);
 
   const handleDelete = async (templateId: string) => {
     Swal.fire({
@@ -71,6 +100,7 @@ export default function BroadcastTemplatePage() {
           }
         );
         fetchTemplates();
+        fetchTemplateCounts();
         Swal.fire("Deleted!", "Your file has been deleted.", "success");
       }
     });
@@ -115,7 +145,7 @@ export default function BroadcastTemplatePage() {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Total Templates</p>
-              <p className="text-2xl font-bold text-gray-900">{meta?.total || 0}</p>
+              <p className="text-2xl font-bold text-gray-900">{whatsappCount + emailCount}</p>
             </div>
           </CardContent>
         </Card>
@@ -130,7 +160,7 @@ export default function BroadcastTemplatePage() {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">WhatsApp Templates</p>
-              <p className="text-2xl font-bold text-gray-900">{templates.filter(t => t.type === 'whatsapp').length}</p>
+              <p className="text-2xl font-bold text-gray-900">{whatsappCount}</p>
             </div>
           </CardContent>
         </Card>
@@ -145,7 +175,7 @@ export default function BroadcastTemplatePage() {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Email Templates</p>
-              <p className="text-2xl font-bold text-gray-900">{templates.filter(t => t.type === 'email').length}</p>
+              <p className="text-2xl font-bold text-gray-900">{emailCount}</p>
             </div>
           </CardContent>
         </Card>
@@ -185,7 +215,7 @@ export default function BroadcastTemplatePage() {
                     ? "bg-green-100 text-green-700" 
                     : "bg-gray-100 text-gray-600"
                 }`}>
-                  {templates.filter(t => t.type === 'whatsapp').length}
+                  {whatsappCount}
                 </span>
               </div>
             </button>
@@ -205,7 +235,7 @@ export default function BroadcastTemplatePage() {
                     ? "bg-blue-100 text-blue-700" 
                     : "bg-gray-100 text-gray-600"
                 }`}>
-                  {templates.filter(t => t.type === 'email').length}
+                  {emailCount}
                 </span>
               </div>
             </button>
