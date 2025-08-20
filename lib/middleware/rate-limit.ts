@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getRedisClient } from '@/lib/redis';
 
 interface RateLimitConfig {
   windowMs: number; // Time window in milliseconds
@@ -14,6 +13,14 @@ const DEFAULT_CONFIG: RateLimitConfig = {
   maxRequests: 100, // 100 requests per minute
   keyGenerator: (req) => getClientIP(req),
 };
+
+// In-memory storage for rate limiting
+interface RateLimitEntry {
+  count: number;
+  resetTime: number;
+}
+
+const rateLimitStore = new Map<string, RateLimitEntry>();
 
 /**
  * Extract client IP address from request
@@ -39,37 +46,60 @@ function getClientIP(req: NextRequest): string {
 }
 
 /**
- * Rate limiting middleware using Redis
+ * Clean up expired entries from the store
+ */
+function cleanupExpiredEntries(): void {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitStore.entries()) {
+    if (now > entry.resetTime) {
+      rateLimitStore.delete(key);
+    }
+  }
+}
+
+/**
+ * Rate limiting middleware using in-memory storage
  */
 export function createRateLimit(config: Partial<RateLimitConfig> = {}) {
   const finalConfig = { ...DEFAULT_CONFIG, ...config };
   
   return async function rateLimit(req: NextRequest): Promise<NextResponse | null> {
     try {
-      const redis = await getRedisClient();
-      if (!redis) {
-        // If Redis is not available, allow the request
-        console.warn('Redis not available for rate limiting');
-        return null;
+      const key = finalConfig.keyGenerator!(req);
+      const now = Date.now();
+      const resetTime = now + finalConfig.windowMs;
+      
+      // Clean up expired entries periodically
+      if (Math.random() < 0.1) { // 10% chance to cleanup
+        cleanupExpiredEntries();
       }
       
-      const key = finalConfig.keyGenerator!(req);
-      const redisKey = `rate_limit:${key}`;
+      let entry = rateLimitStore.get(key);
       
-      // Get current count
-      const current = await redis.get(redisKey);
-      const count = current ? parseInt(current, 10) : 0;
+      if (!entry || now > entry.resetTime) {
+        // Create new entry or reset expired entry
+        entry = {
+          count: 1,
+          resetTime
+        };
+        rateLimitStore.set(key, entry);
+      } else {
+        // Increment existing entry
+        entry.count++;
+      }
       
-      // Check if limit exceeded
-      if (count >= finalConfig.maxRequests) {
-        const ttl = await redis.ttl(redisKey);
-        const resetTime = new Date(Date.now() + (ttl * 1000));
+      const remaining = Math.max(0, finalConfig.maxRequests - entry.count);
+      const resetTimeDate = new Date(entry.resetTime);
+      
+      // Check if rate limit exceeded
+      if (entry.count > finalConfig.maxRequests) {
+        console.log(`🚫 Rate limit exceeded for ${key}: ${entry.count}/${finalConfig.maxRequests}`);
         
         return new NextResponse(
           JSON.stringify({
             error: 'Too Many Requests',
-            message: `Rate limit exceeded. Try again after ${resetTime.toISOString()}`,
-            retryAfter: ttl,
+            message: 'Rate limit exceeded. Please try again later.',
+            retryAfter: Math.ceil((entry.resetTime - now) / 1000)
           }),
           {
             status: 429,
@@ -77,73 +107,52 @@ export function createRateLimit(config: Partial<RateLimitConfig> = {}) {
               'Content-Type': 'application/json',
               'X-RateLimit-Limit': finalConfig.maxRequests.toString(),
               'X-RateLimit-Remaining': '0',
-              'X-RateLimit-Reset': resetTime.toISOString(),
-              'Retry-After': ttl.toString(),
+              'X-RateLimit-Reset': resetTimeDate.toISOString(),
+              'Retry-After': Math.ceil((entry.resetTime - now) / 1000).toString(),
             },
           }
         );
       }
       
-      // Increment counter
-      const pipeline = redis.pipeline();
-      pipeline.incr(redisKey);
+      console.log(`✅ Rate limit check passed for ${key}: ${entry.count}/${finalConfig.maxRequests}`);
       
-      // Set expiration only if this is the first request
-      if (count === 0) {
-        pipeline.expire(redisKey, Math.ceil(finalConfig.windowMs / 1000));
-      }
-      
-      await pipeline.exec();
-      
-      // Add rate limit headers to track usage
-      const remaining = Math.max(0, finalConfig.maxRequests - count - 1);
-      const resetTime = new Date(Date.now() + finalConfig.windowMs);
-      
-      // Store headers in request for later use
-      (req as any).rateLimitHeaders = {
-        'X-RateLimit-Limit': finalConfig.maxRequests.toString(),
-        'X-RateLimit-Remaining': remaining.toString(),
-        'X-RateLimit-Reset': resetTime.toISOString(),
-      };
-      
-      return null; // Allow request to proceed
+      // Rate limit not exceeded, continue
+      return null;
     } catch (error) {
-      console.error('Rate limiting error:', error);
-      // On error, allow the request to proceed
+      console.error('❌ Rate limiting error:', error);
+      // On error, allow the request to continue
       return null;
     }
   };
 }
 
-/**
- * Predefined rate limiters for different use cases
- */
+// Pre-configured rate limiters
 export const rateLimiters = {
-  // Strict rate limiting for authentication endpoints
+  // Authentication endpoints
   auth: createRateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     maxRequests: 5, // 5 attempts per 15 minutes
   }),
   
-  // Standard rate limiting for API endpoints
+  // General API endpoints
   api: createRateLimit({
     windowMs: 60 * 1000, // 1 minute
     maxRequests: 100, // 100 requests per minute
   }),
   
-  // Lenient rate limiting for public endpoints
+  // Public endpoints
   public: createRateLimit({
     windowMs: 60 * 1000, // 1 minute
     maxRequests: 200, // 200 requests per minute
   }),
   
-  // Strict rate limiting for file uploads
+  // File upload endpoints
   upload: createRateLimit({
     windowMs: 60 * 1000, // 1 minute
     maxRequests: 10, // 10 uploads per minute
   }),
   
-  // Email/SMS rate limiting
+  // Messaging endpoints
   messaging: createRateLimit({
     windowMs: 60 * 1000, // 1 minute
     maxRequests: 20, // 20 messages per minute
@@ -151,53 +160,56 @@ export const rateLimiters = {
 };
 
 /**
- * Higher-order function to apply rate limiting to API routes
+ * Higher-order function to wrap API handlers with rate limiting
  */
 export function withRateLimit(
   handler: (req: NextRequest, ...args: any[]) => Promise<NextResponse>,
   rateLimit: ReturnType<typeof createRateLimit>
 ) {
-  return async function rateLimitedHandler(
-    req: NextRequest,
-    ...args: any[]
-  ): Promise<NextResponse> {
+  return async function(req: NextRequest, ...args: any[]): Promise<NextResponse> {
     // Apply rate limiting
     const rateLimitResponse = await rateLimit(req);
+    
     if (rateLimitResponse) {
       return rateLimitResponse;
     }
     
-    // Execute the original handler
-    const response = await handler(req, ...args);
-    
-    // Add rate limit headers to successful responses
-    const rateLimitHeaders = (req as any).rateLimitHeaders;
-    if (rateLimitHeaders) {
-      Object.entries(rateLimitHeaders).forEach(([key, value]) => {
-        response.headers.set(key, value as string);
-      });
+    // Rate limit passed, execute the original handler
+    try {
+      const response = await handler(req, ...args);
+      
+      // Add rate limit headers to successful responses
+      const key = getClientIP(req);
+      const entry = rateLimitStore.get(key);
+      
+      if (entry) {
+        response.headers.set('X-RateLimit-Limit', '100');
+        response.headers.set('X-RateLimit-Remaining', Math.max(0, 100 - entry.count).toString());
+        response.headers.set('X-RateLimit-Reset', new Date(entry.resetTime).toISOString());
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Handler error:', error);
+      throw error;
     }
-    
-    return response;
   };
 }
 
 /**
- * Utility function to clear rate limit for a specific key
+ * Clear rate limit for a specific key (for testing or admin purposes)
  */
 export async function clearRateLimit(key: string): Promise<void> {
   try {
-    const redis = await getRedisClient();
-    if (redis) {
-      await redis.del(`rate_limit:${key}`);
-    }
+    rateLimitStore.delete(key);
+    console.log(`🧹 Cleared rate limit for key: ${key}`);
   } catch (error) {
-    console.error('Error clearing rate limit:', error);
+    console.error('❌ Error clearing rate limit:', error);
   }
 }
 
 /**
- * Utility function to get current rate limit status
+ * Get current rate limit status for a key
  */
 export async function getRateLimitStatus(
   key: string,
@@ -208,22 +220,27 @@ export async function getRateLimitStatus(
   resetTime: Date | null;
 }> {
   try {
-    const redis = await getRedisClient();
-    if (!redis) {
-      return { count: 0, remaining: maxRequests, resetTime: null };
+    const entry = rateLimitStore.get(key);
+    
+    if (!entry || Date.now() > entry.resetTime) {
+      return {
+        count: 0,
+        remaining: maxRequests,
+        resetTime: null,
+      };
     }
     
-    const redisKey = `rate_limit:${key}`;
-    const count = parseInt((await redis.get(redisKey)) || '0', 10);
-    const ttl = await redis.ttl(redisKey);
-    
     return {
-      count,
-      remaining: Math.max(0, maxRequests - count),
-      resetTime: ttl > 0 ? new Date(Date.now() + ttl * 1000) : null,
+      count: entry.count,
+      remaining: Math.max(0, maxRequests - entry.count),
+      resetTime: new Date(entry.resetTime),
     };
   } catch (error) {
-    console.error('Error getting rate limit status:', error);
-    return { count: 0, remaining: maxRequests, resetTime: null };
+    console.error('❌ Error getting rate limit status:', error);
+    return {
+      count: 0,
+      remaining: maxRequests,
+      resetTime: null,
+    };
   }
 }

@@ -6,7 +6,6 @@ import {
 import { jwtVerify } from "jose";
 import { apiResponse } from "@/lib/api-response";
 import { guestCategorySchema } from "@/lib/validations";
-import { getCachedData, generateCacheKey, CACHE_TTL, invalidateCache } from "@/lib/redis";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
@@ -29,25 +28,17 @@ export async function GET(
     const sortKey = req.nextUrl.searchParams.get("sortKey");
     const sortOrder = req.nextUrl.searchParams.get("sortOrder");
     
-    // Generate cache key including query parameters
-    const queryParams = [search, page, limit, sortKey, sortOrder].filter(Boolean).join('-');
-    const cacheKey = generateCacheKey('categories', eventId, queryParams || 'default');
-    
-    // Get guest categories with Redis caching
-    const guestCategories = await getCachedData(
-      cacheKey,
-      () => getGuestCategories(
-        eventId,
-        search || undefined,
-        page ? Number(page) : 1,
-        limit ? Number(limit) : 10,
-        sortKey || undefined,
-        sortOrder || undefined
-      ),
-      CACHE_TTL.GUEST_CATEGORIES
+    // Get guest categories directly from database
+    const guestCategories = await getGuestCategories(
+      eventId,
+      search || undefined,
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      sortKey || undefined,
+      sortOrder || undefined
     );
     
-    const response = apiResponse(
+    return apiResponse(
       "success",
       "Guest categories retrieved successfully",
       guestCategories.data,
@@ -55,12 +46,6 @@ export async function GET(
       guestCategories.meta,
       200
     );
-    
-    // Add cache headers
-    response.headers.set('Cache-Control', `public, max-age=${CACHE_TTL.GUEST_CATEGORIES}`);
-    response.headers.set('X-Cache-TTL', CACHE_TTL.GUEST_CATEGORIES.toString());
-    
-    return response;
   } catch {
     return apiResponse("error", "Unauthorized", null, [], null, 401);
   }
@@ -85,10 +70,6 @@ export async function POST(
     }
     const { eventId } = await params;
     const guestCategory = await createGuestCategory(eventId, validation.data);
-    
-    // Invalidate related cache after creating new category
-    await invalidateCache(`guestbook:categories:${eventId}*`);
-    await invalidateCache(`guestbook:statistics:${eventId}*`);
     
     return apiResponse(
       "success",

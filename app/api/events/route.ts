@@ -3,7 +3,6 @@ import { createEvent, getEvents } from "@/lib/services/eventService";
 import { jwtVerify } from "jose";
 import { apiResponse } from "@/lib/api-response";
 import { eventSchema } from "@/lib/validations";
-import { getCachedData, generateCacheKey, CACHE_TTL, invalidateCache } from "@/lib/redis";
 import { withRateLimit, rateLimiters } from "@/lib/middleware/rate-limit";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
@@ -62,24 +61,16 @@ async function getEventsHandler(req: NextRequest) {
     const sortKey = req.nextUrl.searchParams.get("sortKey");
     const sortOrder = req.nextUrl.searchParams.get("sortOrder");
     
-    // Generate cache key including query parameters
-    const queryParams = [search, page, limit, sortKey, sortOrder].filter(Boolean).join('-');
-    const cacheKey = generateCacheKey('events', 'all', queryParams || 'default');
-    
-    // Get events with Redis caching
-    const events = await getCachedData(
-      cacheKey,
-      () => getEvents(
-        search || undefined,
-        page ? Number(page) : 1,
-        limit ? Number(limit) : 10,
-        sortKey || undefined,
-        sortOrder || undefined
-      ),
-      CACHE_TTL.EVENTS
+    // Get events directly from database
+    const events = await getEvents(
+      search || undefined,
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 10,
+      sortKey || undefined,
+      sortOrder || undefined
     );
     
-    const response = apiResponse(
+    return apiResponse(
       "success",
       "Events retrieved successfully",
       events.data,
@@ -87,12 +78,6 @@ async function getEventsHandler(req: NextRequest) {
       events.meta,
       200
     );
-    
-    // Add cache headers
-    response.headers.set('Cache-Control', `public, max-age=${CACHE_TTL.EVENTS}`);
-    response.headers.set('X-Cache-TTL', CACHE_TTL.EVENTS.toString());
-    
-    return response;
   } catch {
     return apiResponse("error", "Unauthorized", null, [], null, 401);
   }
@@ -140,8 +125,7 @@ async function createEventHandler(req: NextRequest) {
     }
     const event = await createEvent(validation.data);
     
-    // Invalidate events cache after creating new event
-    await invalidateCache('guestbook:events:*');
+    // Event created successfully
     
     return apiResponse(
       "success",
