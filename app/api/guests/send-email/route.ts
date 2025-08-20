@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma';
 import { writeFile, mkdir, readFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { tmpdir } from 'os';
 import { replaceEmailVariables, type GuestData } from '@/lib/utils/templateVariables';
 
 export async function POST(request: NextRequest) {
@@ -88,8 +89,8 @@ export async function POST(request: NextRequest) {
     const results = [];
     const errors = [];
 
-    // Ensure the QR cards directory exists
-    const qrCardsDir = join(process.cwd(), 'public', 'qr-cards');
+    // Use temporary directory for QR cards in serverless environments
+    const qrCardsDir = join(tmpdir(), 'qr-cards');
     if (!existsSync(qrCardsDir)) {
       await mkdir(qrCardsDir, { recursive: true });
     }
@@ -239,7 +240,7 @@ export async function POST(request: NextRequest) {
               guestName: guest.name,
               email: guest.email,
               status: 'sent',
-              qrCardPath: `/qr-cards/${filename}`
+              qrCardPath: `temp://${filename}` // Temporary file, not accessible via URL
             });
           } catch (templateError) {
             console.error('Error reading template:', templateError);

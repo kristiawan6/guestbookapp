@@ -6,6 +6,7 @@ import { imageProcessingService } from "../../../../src/services/imageProcessing
 import { writeFile, mkdir, readFile } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+import { tmpdir } from "os";
 import { replaceEmailVariables, replaceTemplateVariables, type GuestData } from "@/lib/utils/templateVariables";
 
 export async function POST(req: NextRequest) {
@@ -98,8 +99,8 @@ export async function POST(req: NextRequest) {
         }
       }
     } else if (type === "Email") {
-      // Ensure the QR cards directory exists
-      const qrCardsDir = join(process.cwd(), 'public', 'qr-cards');
+      // Use temporary directory for QR cards in serverless environments
+      const qrCardsDir = join(tmpdir(), 'qr-cards');
       if (!existsSync(qrCardsDir)) {
         await mkdir(qrCardsDir, { recursive: true });
       }

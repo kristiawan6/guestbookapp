@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { stat } from "fs/promises";
+import { tmpdir } from "os";
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,7 +30,8 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const qrCardsDir = join(process.cwd(), "public", "qr-cards");
+    // Use temporary directory for serverless environments
+    const qrCardsDir = join(tmpdir(), "qr-cards");
     try {
       await stat(qrCardsDir);
     } catch (error: unknown) {
@@ -54,7 +56,16 @@ export async function POST(req: NextRequest) {
     await writeFile(path, buffer);
     console.log(`QR template uploaded to ${path}`);
 
-    return NextResponse.json({ success: true, path: `/qr-cards/${uniqueFileName}` });
+    // In serverless environments, return base64 data instead of file path
+    const base64Data = buffer.toString('base64');
+    const dataUrl = `data:${file.type};base64,${base64Data}`;
+    
+    return NextResponse.json({ 
+      success: true, 
+      path: dataUrl, // Return data URL instead of file path
+      filename: uniqueFileName,
+      tempPath: path // For debugging purposes
+    });
   } catch (error) {
     console.error("Error uploading QR template:", error);
     return NextResponse.json(
