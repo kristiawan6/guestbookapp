@@ -250,7 +250,7 @@ export async function POST(req: NextRequest) {
               // Upload the processed image to Cloudinary
               const filename = `qr-card-${guest.id}-${Date.now()}`;
               const cloudinaryResult = await uploadToCloudinary(processedImageBuffer, {
-                folder: 'guestbook/qr-cards',
+                folder: `guestbook/${process.env.CLOUDINARY_UPLOAD_FOLDER || 'qr-cards'}`,
                 public_id: filename,
                 resource_type: 'image',
                 format: 'png'

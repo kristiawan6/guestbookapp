@@ -24,7 +24,7 @@ export const sendOtpEmail = async (
     }
 
     await resend.emails.send({
-      from: process.env.EMAIL_FROM || "no-reply@williamkristiawan.site",
+      from:"no-reply@williamkristiawan.site",
       to,
       subject,
       react: OtpEmail({ otp }) as React.ReactElement,
@@ -74,7 +74,7 @@ export const sendEmail = async (
       react: React.ReactElement;
       attachments?: EmailAttachment[];
     } = {
-      from: process.env.EMAIL_FROM || "no-reply@williamkristiawan.site",
+      from:"no-reply@williamkristiawan.site",
       to,
       subject,
       react: BroadcastEmail({ message }) as React.ReactElement,

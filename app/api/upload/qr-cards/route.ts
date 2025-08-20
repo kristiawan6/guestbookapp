@@ -41,8 +41,9 @@ export async function POST(req: NextRequest) {
     const uniqueFileName = `qr-template-${timestamp}`;
     
     // Upload to Cloudinary
+    const uploadFolder = process.env.CLOUDINARY_UPLOAD_FOLDER || 'qr-cards';
     const cloudinaryResult = await uploadToCloudinary(buffer, {
-      folder: 'guestbook/qr-templates',
+      folder: `guestbook/${uploadFolder}`,
       public_id: uniqueFileName,
       resource_type: 'image',
       format: fileExtension
