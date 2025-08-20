@@ -128,10 +128,20 @@ export default function GuestPage() {
       fetch(
         `/api/events/${selectedEventId}/guests?search=${search}&page=${page}&sortKey=${sortKey}&sortOrder=${sortOrder}`
       )
-        .then((res) => res.json())
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+          }
+          return res.json();
+        })
         .then((data) => {
           setGuests(data.data);
           setMeta(data.meta);
+        })
+        .catch((error) => {
+          console.error('Error fetching guests:', error);
+          setGuests([]);
+          setMeta({ page: 1, limit: 10, total: 0, totalPages: 0 });
         });
     }
   }, [page, search, selectedEventId, sortKey, sortOrder]);

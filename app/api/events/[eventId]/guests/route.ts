@@ -151,3 +151,7 @@ async function createGuestHandler(
     return apiResponse("error", "Unauthorized", null, [], null, 401);
   }
 }
+
+// Export the HTTP methods with rate limiting
+export const GET = withRateLimit(getGuestsHandler, rateLimiters.api);
+export const POST = withRateLimit(createGuestHandler, rateLimiters.api);
