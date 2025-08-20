@@ -3,7 +3,8 @@ import { OtpEmail } from "@/emails/otp-email";
 import { BroadcastEmail } from "@/emails/broadcast-email";
 import React from "react";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend only if API key is available
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // Original OTP email function
 export const sendOtpEmail = async (
@@ -12,7 +13,7 @@ export const sendOtpEmail = async (
   otp: string
 ): Promise<boolean> => {
   try {
-    if (!process.env.RESEND_API_KEY) {
+    if (!process.env.RESEND_API_KEY || !resend) {
       console.error(
         "Email service not configured. Please set RESEND_API_KEY environment variable."
       );
@@ -51,7 +52,7 @@ export const sendEmail = async (
   attachments?: EmailAttachment[]
 ): Promise<boolean> => {
   try {
-    if (!process.env.RESEND_API_KEY) {
+    if (!process.env.RESEND_API_KEY || !resend) {
       console.error(
         "Email service not configured. Please set RESEND_API_KEY environment variable."
       );
