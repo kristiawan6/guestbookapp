@@ -34,6 +34,9 @@ model Event {
   messages           Message[]
   users              UserEventAssociation[]
   whatsappMessages   WhatsAppMessage[]
+  
+  @@index([isActive])
+  @@index([name])
 }
 
 model UserEventAssociation {
@@ -57,6 +60,9 @@ model GuestCategory {
   event       Event   @relation(fields: [eventId], references: [id])
 
   @@unique([code, eventId])
+  @@index([eventId])
+  @@index([isActive])
+  @@index([name])
 }
 
 model Guest {
@@ -86,6 +92,15 @@ model Guest {
 
   @@unique([email, eventId])
   @@unique([phoneNumber, eventId])
+  @@index([eventId])
+  @@index([guestCategoryId])
+  @@index([status])
+  @@index([whatsappStatus])
+  @@index([isDeleted])
+  @@index([createdAt])
+  @@index([name])
+  @@index([email])
+  @@index([phoneNumber])
 }
 
 model Message {
@@ -97,6 +112,11 @@ model Message {
   eventId   String
   event     Event    @relation(fields: [eventId], references: [id])
   guest     Guest    @relation(fields: [guestId], references: [id])
+  
+  @@index([eventId])
+  @@index([guestId])
+  @@index([approved])
+  @@index([timestamp])
 }
 
 model BroadcastTemplate {
@@ -112,6 +132,10 @@ model BroadcastTemplate {
   imageAttachmentType String?
   coordinateFields    String?
   event               Event         @relation(fields: [eventId], references: [id])
+  
+  @@index([eventId])
+  @@index([type])
+  @@index([name])
 }
 
 model ClaimableItem {
@@ -123,6 +147,9 @@ model ClaimableItem {
   eventId           String
   claimTransactions ClaimTransaction[]
   event             Event              @relation(fields: [eventId], references: [id])
+  
+  @@index([eventId])
+  @@index([remainingQuantity])
 }
 
 model ClaimTransaction {
@@ -134,6 +161,11 @@ model ClaimTransaction {
   admin           User          @relation(fields: [adminId], references: [id])
   claimableItem   ClaimableItem @relation(fields: [claimableItemId], references: [id])
   guest           Guest         @relation(fields: [guestId], references: [id])
+  
+  @@index([guestId])
+  @@index([claimableItemId])
+  @@index([adminId])
+  @@index([timestamp])
 }
 
 enum UserRole {

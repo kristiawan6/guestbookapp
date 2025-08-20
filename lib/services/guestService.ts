@@ -96,6 +96,21 @@ export const getGuests = async (
       },
       skip: (page - 1) * limit,
       take: limit,
+      include: {
+        guestCategory: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+        event: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
     }),
     prisma.guest.count({ where }),
   ]);
@@ -114,6 +129,18 @@ export const getGuests = async (
 export const getAllGuests = async (eventId: string) => {
   const guests = await prisma.guest.findMany({
     where: { eventId },
+    include: {
+      guestCategory: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+        },
+      },
+    },
+    orderBy: {
+      name: 'asc',
+    },
   });
   return guests;
 };
@@ -122,8 +149,32 @@ export const getGuestById = async (id: string) => {
   const guest = await prisma.guest.findUnique({
     where: { id },
     include: {
-      event: true,
-      guestCategory: true,
+      event: {
+        select: {
+          id: true,
+          name: true,
+          description: true,
+        },
+      },
+      guestCategory: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          description: true,
+        },
+      },
+      messages: {
+        select: {
+          id: true,
+          content: true,
+          timestamp: true,
+          approved: true,
+        },
+        orderBy: {
+          timestamp: 'desc',
+        },
+      },
     },
   });
   

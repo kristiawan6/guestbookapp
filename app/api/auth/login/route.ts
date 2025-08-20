@@ -4,6 +4,7 @@ import { compare } from "bcrypt";
 import { SignJWT } from "jose";
 import { cookies } from "next/headers";
 import { apiResponse } from "@/lib/api-response";
+import { withRateLimit, rateLimiters } from "@/lib/middleware/rate-limit";
 
 /**
  * @swagger
@@ -27,7 +28,7 @@ import { apiResponse } from "@/lib/api-response";
  *       401:
  *         description: Invalid credentials
  */
-export async function POST(req: NextRequest) {
+async function loginHandler(req: NextRequest) {
   try {
     const body = await req.json();
     const { username, password } = body;
@@ -82,3 +83,6 @@ export async function POST(req: NextRequest) {
     return apiResponse("error", "An unknown error occurred", null, [], null, 500);
   }
 }
+
+// Apply rate limiting to the login endpoint
+export const POST = withRateLimit(loginHandler, rateLimiters.auth);

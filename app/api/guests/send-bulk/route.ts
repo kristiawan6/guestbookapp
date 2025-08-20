@@ -3,10 +3,9 @@ import prisma from "@/lib/prisma";
 import { sendWhatsAppMessage } from "@/lib/services/whatsappService";
 import { sendEmail, sendEmailWithQRCard } from "@/lib/services/emailService";
 import { imageProcessingService } from "../../../../src/services/imageProcessingService";
-import { writeFile, mkdir, readFile } from "fs/promises";
+import { readFile } from "fs/promises";
 import { join } from "path";
-import { existsSync } from "fs";
-import { tmpdir } from "os";
+import { uploadToCloudinary, isCloudinaryConfigured } from "@/lib/cloudinaryService";
 import { replaceEmailVariables, replaceTemplateVariables, type GuestData } from "@/lib/utils/templateVariables";
 
 export async function POST(req: NextRequest) {
@@ -99,10 +98,12 @@ export async function POST(req: NextRequest) {
         }
       }
     } else if (type === "Email") {
-      // Use temporary directory for QR cards in serverless environments
-      const qrCardsDir = join(tmpdir(), 'qr-cards');
-      if (!existsSync(qrCardsDir)) {
-        await mkdir(qrCardsDir, { recursive: true });
+      // Check if Cloudinary is configured for QR card uploads
+      if (!isCloudinaryConfigured()) {
+        return NextResponse.json(
+          { message: 'Cloudinary is not properly configured for QR card generation' },
+          { status: 500 }
+        );
       }
 
       for (const guest of guests) {
@@ -246,17 +247,21 @@ export async function POST(req: NextRequest) {
                 coordinateFields: parsedCoordinateFields
               });
 
-              // Save the processed image
-              const filename = `qr-card-${guest.id}-${Date.now()}.png`;
-              const filepath = join(qrCardsDir, filename);
-              await writeFile(filepath, processedImageBuffer);
+              // Upload the processed image to Cloudinary
+              const filename = `qr-card-${guest.id}-${Date.now()}`;
+              const cloudinaryResult = await uploadToCloudinary(processedImageBuffer, {
+                folder: 'guestbook/qr-cards',
+                public_id: filename,
+                resource_type: 'image',
+                format: 'png'
+              });
 
-              // Send email with QR card attachment
+              // Send email with QR card attachment using Cloudinary URL
               await sendEmailWithQRCard(
                 guest.email,
                 personalizedSubject,
                 personalizedContent,
-                filepath,
+                cloudinaryResult.secure_url,
                 guest.name
               );
             } else {

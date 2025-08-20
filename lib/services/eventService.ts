@@ -52,6 +52,15 @@ export const getEvents = async (
       },
       skip: (page - 1) * limit,
       take: limit,
+      include: {
+        _count: {
+          select: {
+            guests: true,
+            guestCategories: true,
+            messages: true,
+          },
+        },
+      },
     }),
     prisma.event.count({ where }),
   ]);
@@ -70,6 +79,31 @@ export const getEvents = async (
 export const getEventById = async (id: string) => {
   const event = await prisma.event.findUnique({
     where: { id },
+    include: {
+      guestCategories: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          quota: true,
+          _count: {
+            select: {
+              guests: true,
+            },
+          },
+        },
+        orderBy: {
+          name: 'asc',
+        },
+      },
+      _count: {
+        select: {
+          guests: true,
+          messages: true,
+          broadcastTemplates: true,
+        },
+      },
+    },
   });
   return event;
 };

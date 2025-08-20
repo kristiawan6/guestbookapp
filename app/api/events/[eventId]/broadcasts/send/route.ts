@@ -6,6 +6,7 @@ import { sendEmail, sendEmailWithQRCard } from "@/lib/services/emailService";
 import { imageProcessingService } from "../../../../../../src/services/imageProcessingService";
 import { readFile } from "fs/promises";
 import path from "path";
+import { uploadToCloudinary, isCloudinaryConfigured } from "@/lib/cloudinaryService";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
@@ -21,11 +22,28 @@ export async function POST(
 
   try {
     await jwtVerify(token, secret);
-    const { templateId, recipientType, recipientIds } = await req.json();
 
-    if (!templateId || !recipientType || !recipientIds) {
+    // Check if Cloudinary is configured for QR card processing
+    if (!isCloudinaryConfigured()) {
       return NextResponse.json(
-        { message: "Missing required fields" },
+        {
+          success: false,
+          message: "Cloudinary is not properly configured for file uploads"
+        },
+        { status: 500 }
+      );
+    }
+
+    const { eventId } = await params;
+    const body = await req.json();
+    const { templateId, recipientType, recipientIds } = body;
+
+    if (!templateId || !recipientType || !eventId || !recipientIds) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Missing required fields: templateId, recipientType, eventId, recipientIds"
+        },
         { status: 400 }
       );
     }
@@ -127,38 +145,27 @@ export async function POST(
                  blankTemplateBuffer: templateBuffer
                });
               
-              // Save processed image temporarily
-              const tempDir = path.join(process.cwd(), 'temp');
-              const tempFileName = `qr-card-${recipient.id}-${Date.now()}.png`;
-              const tempFilePath = path.join(tempDir, tempFileName);
+              // Upload processed image to Cloudinary
+              const uniqueFileName = `qr-card-${recipient.id}-${Date.now()}`;
+              const cloudinaryResult = await uploadToCloudinary(processedImageBuffer, {
+                folder: 'guestbook/qr-cards',
+                public_id: uniqueFileName,
+                resource_type: 'image',
+                format: 'png'
+              });
               
-              // Ensure temp directory exists
-              const fs = await import('fs/promises');
-              try {
-                await fs.mkdir(tempDir, { recursive: true });
-              } catch (err) {
-                // Directory might already exist
-              }
+              console.log(`QR card uploaded to Cloudinary: ${cloudinaryResult.secure_url}`);
               
-              await fs.writeFile(tempFilePath, processedImageBuffer);
-              
-              // Send email with QR card attachment
-              console.log(`Sending QR card email to ${recipient.email} with attachment: ${tempFilePath}`);
+              // Send email with QR card attachment using Cloudinary URL
+              console.log(`Sending QR card email to ${recipient.email} with Cloudinary URL: ${cloudinaryResult.secure_url}`);
               const emailResult = await sendEmailWithQRCard(
                 recipient.email,
                 template.subject || template.name,
                 template.content.replace(/##_GUEST_NAME_##/g, recipient.name),
-                tempFilePath,
+                cloudinaryResult.secure_url,
                 recipient.name
               );
               console.log(`Email sent result: ${emailResult}`);
-              
-              // Clean up temporary file
-              try {
-                await fs.unlink(tempFilePath);
-              } catch (err) {
-                console.error(`Failed to delete temp file: ${tempFilePath}`);
-              }
             } catch (error) {
               console.error(`Failed to send QR card email to ${recipient.name}:`, error);
               console.error('Error details:', error);

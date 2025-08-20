@@ -4,6 +4,7 @@ import { jwtVerify } from "jose";
 import { apiResponse } from "@/lib/api-response";
 import { guestSchema } from "@/lib/validations";
 import { emitGuestUpdate } from "@/lib/socket";
+import { withRateLimit, rateLimiters } from "@/lib/middleware/rate-limit";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key");
 
@@ -44,7 +45,7 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-k
  *       401:
  *         description: Unauthorized
  */
-export async function GET(
+async function getGuestsHandler(
   req: NextRequest,
   { params }: { params: Promise<{ eventId: string }> }
 ) {
@@ -107,7 +108,7 @@ export async function GET(
  *       401:
  *         description: Unauthorized
  */
-export async function POST(
+async function createGuestHandler(
   req: NextRequest,
   { params }: { params: Promise<{ eventId: string }> }
 ) {

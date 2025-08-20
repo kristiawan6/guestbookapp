@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { stat } from "fs/promises";
-import { tmpdir } from "os";
+import { uploadToCloudinary, isCloudinaryConfigured } from "@/lib/cloudinaryService";
 
 export async function POST(req: NextRequest) {
   try {
+    // Check if Cloudinary is configured
+    if (!isCloudinaryConfigured()) {
+      return NextResponse.json(
+        { success: false, error: "Cloudinary is not properly configured" },
+        { status: 500 }
+      );
+    }
+
     const data = await req.formData();
     const file: File | null = data.get("file") as unknown as File;
 
@@ -30,41 +35,27 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Use temporary directory for serverless environments
-    const qrCardsDir = join(tmpdir(), "qr-cards");
-    try {
-      await stat(qrCardsDir);
-    } catch (error: unknown) {
-      const e = error as { code?: string };
-      if (e.code === "ENOENT") {
-        await mkdir(qrCardsDir, { recursive: true });
-      } else {
-        console.error("Error checking qr-cards directory:", error);
-        return NextResponse.json(
-          { success: false, error: "Internal Server Error" },
-          { status: 500 }
-        );
-      }
-    }
-
     // Generate unique filename with timestamp to avoid conflicts
     const timestamp = Date.now();
     const fileExtension = file.name.split('.').pop() || 'jpg';
-    const uniqueFileName = `qr-template-${timestamp}.${fileExtension}`;
-    const path = join(qrCardsDir, uniqueFileName);
+    const uniqueFileName = `qr-template-${timestamp}`;
     
-    await writeFile(path, buffer);
-    console.log(`QR template uploaded to ${path}`);
-
-    // In serverless environments, return base64 data instead of file path
-    const base64Data = buffer.toString('base64');
-    const dataUrl = `data:${file.type};base64,${base64Data}`;
+    // Upload to Cloudinary
+    const cloudinaryResult = await uploadToCloudinary(buffer, {
+      folder: 'guestbook/qr-templates',
+      public_id: uniqueFileName,
+      resource_type: 'image',
+      format: fileExtension
+    });
+    
+    console.log(`QR template uploaded to Cloudinary: ${cloudinaryResult.secure_url}`);
     
     return NextResponse.json({ 
       success: true, 
-      path: dataUrl, // Return data URL instead of file path
-      filename: uniqueFileName,
-      tempPath: path // For debugging purposes
+      path: cloudinaryResult.secure_url, // Return Cloudinary URL
+      filename: `${uniqueFileName}.${fileExtension}`,
+      cloudinaryId: cloudinaryResult.public_id,
+      url: cloudinaryResult.secure_url
     });
   } catch (error) {
     console.error("Error uploading QR template:", error);
