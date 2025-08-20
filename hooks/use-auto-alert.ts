@@ -108,7 +108,7 @@ export const useAutoAlert = () => {
       },
       options?: { duration?: number }
     ) => {
-      return toastService.promise(promise, messages, options);
+      return toastService.promise(promise, messages);
     },
     []
   );

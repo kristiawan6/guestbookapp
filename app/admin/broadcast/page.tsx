@@ -1,10 +1,10 @@
 "use client";
 
-import { Pencil, Trash2, Plus, MessageSquare, Mail, Search, Send, FileText, Activity, BarChart3 } from "lucide-react";
+import { Pencil, Trash2, Plus, MessageSquare, Mail, Search, Send, FileText } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useStatistics } from "@/hooks/use-statistics";
 import Link from "next/link";
 import { useRouter } from "next/navigation";

@@ -26,12 +26,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { useCallback, useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { ImportDialog } from "@/components/ui/import-dialog";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+
 import {
   Table,
   TableBody,
@@ -42,7 +37,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+
 import {
   Dialog,
   DialogContent,
@@ -64,7 +59,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStatistics } from "@/hooks/use-statistics";
 import Swal from "sweetalert2";
 import { Textarea } from "@/components/ui/textarea";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -97,6 +92,13 @@ type Meta = {
   limit: number;
   total: number;
   totalPages: number;
+};
+
+type Template = {
+  id: string;
+  name: string;
+  subject?: string;
+  content: string;
 };
 
 export default function GuestPage() {
@@ -281,7 +283,7 @@ export default function GuestPage() {
       } else {
         throw new Error('Failed to send messages');
       }
-    } catch (error) {
+    } catch {
       Swal.fire(
         "Error!", 
         `Failed to send ${templateType} messages. Please try again.`, 
@@ -290,7 +292,7 @@ export default function GuestPage() {
     }
   };
 
-  const handleIndividualTemplateSelect = async (template: any) => {
+  const handleIndividualTemplateSelect = async (template: Template) => {
     if (!individualEmailGuest) return;
 
     try {
@@ -405,7 +407,7 @@ export default function GuestPage() {
           fetchGuests();
           setSelectedGuests([]);
           Swal.fire("Deleted!", `${selectedGuests.length} guest(s) have been deleted.`, "success");
-        } catch (error) {
+        } catch {
           Swal.fire("Error!", "Failed to delete some guests. Please try again.", "error");
         }
       }

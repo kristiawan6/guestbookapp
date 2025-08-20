@@ -99,8 +99,6 @@ export default function GuestStatisticPage() {
     { name: 'Premium', value: 25, color: '#3B82F6' },
   ];
 
-  const COLORS = ['#8B5CF6', '#10B981', '#3B82F6', '#F59E0B'];
-
   return (
     <div className="space-y-6">
       {/* Header Section */}

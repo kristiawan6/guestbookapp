@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -31,13 +31,27 @@ interface CoordinateField {
   fieldName?: string;
 }
 
+interface Template {
+  id: string;
+  name: string;
+  imagePath: string;
+  coordinateFields?: CoordinateField[];
+}
+
+interface Guest {
+  id: string;
+  name: string;
+  email: string;
+  phoneNumber: string;
+}
+
 interface DynamicQRProcessorProps {
   eventId: string;
 }
 
 export default function DynamicQRProcessor({ eventId }: DynamicQRProcessorProps) {
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [guests, setGuests] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [guests, setGuests] = useState<Guest[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [selectedGuests, setSelectedGuests] = useState<string[]>([]);
   const [coordinateFields, setCoordinateFields] = useState<CoordinateField[]>([]);
@@ -46,14 +60,14 @@ export default function DynamicQRProcessor({ eventId }: DynamicQRProcessorProps)
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Fetch templates with coordinate fields
-  const fetchTemplates = async () => {
+  const fetchTemplates = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/events/${eventId}/broadcast-templates?type=whatsapp`);
       const data = await response.json();
       if (data.success) {
         // Filter templates that have coordinate fields
-        const templatesWithCoords = data.data.filter((template: any) => template.coordinateFields);
+        const templatesWithCoords = data.data.filter((template: Template) => template.coordinateFields);
         setTemplates(templatesWithCoords);
       }
     } catch (error) {
@@ -66,10 +80,10 @@ export default function DynamicQRProcessor({ eventId }: DynamicQRProcessorProps)
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [eventId]);
 
   // Fetch guests for the event
-  const fetchGuests = async () => {
+  const fetchGuests = useCallback(async () => {
     try {
       const response = await fetch(`/api/events/${eventId}/guests`);
       const data = await response.json();
@@ -79,7 +93,7 @@ export default function DynamicQRProcessor({ eventId }: DynamicQRProcessorProps)
     } catch (error) {
       console.error('Error fetching guests:', error);
     }
-  };
+  }, [eventId]);
 
   // Fetch coordinate fields for selected template
   const fetchCoordinateFields = async (templateId: string) => {
@@ -165,7 +179,7 @@ export default function DynamicQRProcessor({ eventId }: DynamicQRProcessorProps)
   React.useEffect(() => {
     fetchTemplates();
     fetchGuests();
-  }, [eventId]);
+  }, [eventId, fetchTemplates, fetchGuests]);
 
   return (
     <div className="space-y-6">

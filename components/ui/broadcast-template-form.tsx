@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +14,7 @@ import { useRouter } from "next/navigation";
 import SunEditor from "@/components/ui/sun-editor";
 import Swal from "sweetalert2";
 import CoordinatePicker, { CoordinateField } from "@/components/ui/coordinate-picker";
-import { MessageSquare, Mail, FileText, Image, Settings, Plus, ArrowLeft, Save, Sparkles, Variable } from "lucide-react";
+import { MessageSquare, Mail, FileText, Image, Plus, ArrowLeft, Save, Sparkles, Variable } from "lucide-react";
 
 
 const GUEST_FIELDS = [
@@ -192,7 +192,7 @@ export default function BroadcastTemplateForm({
     }
     
     // Convert FormData to JSON object (excluding the file inputs)
-    const jsonData: any = {};
+    const jsonData: Record<string, FormDataEntryValue> = {};
     formData.forEach((value, key) => {
       if (key !== 'qrCardImage' && key !== 'customImage') { // Skip the file inputs
         jsonData[key] = value;
@@ -295,23 +295,7 @@ export default function BroadcastTemplateForm({
     editorRef.current = sunEditor;
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Create a preview URL for the selected file
-      const previewUrl = URL.createObjectURL(file);
-      setUploadedImageUrl(previewUrl);
-      
-      // Set appropriate image URL based on current attachment type
-      if (imageAttachment === 'qr-card') {
-        setQrCardImageUrl(previewUrl);
-        setCustomImageUrl("");
-      } else if (imageAttachment === 'customize') {
-        setCustomImageUrl(previewUrl);
-        setQrCardImageUrl("");
-      }
-    }
-  };
+
 
   const handleQrCardFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

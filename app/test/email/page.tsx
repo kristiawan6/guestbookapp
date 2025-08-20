@@ -15,7 +15,26 @@ export default function EmailTestPage() {
   const [templateImageUrl, setTemplateImageUrl] = useState('');
   const [eventId, setEventId] = useState('');
   const [loading, setLoading] = useState(false);
-  const [guestData, setGuestData] = useState<any>(null);
+  const [guestData, setGuestData] = useState<{
+    id: string;
+    name: string;
+    email?: string;
+    phoneNumber?: string;
+    address?: string;
+    numberOfGuests?: number;
+    session?: string;
+    tableNumber?: string;
+    status: 'Pending' | 'Attended' | 'NotAttended';
+    whatsappStatus: 'NotSent' | 'Sent' | 'Delivered' | 'Read' | 'Failed';
+    guestCategory?: {
+      id: string;
+      name: string;
+    };
+    eventId: string;
+    qrCode?: string;
+    createdAt: string;
+    updatedAt: string;
+  } | null>(null);
   
   const { showSuccess, showError, showLoading, dismissAll } = useAutoAlert();
 

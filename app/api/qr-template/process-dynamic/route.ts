@@ -113,8 +113,8 @@ export async function POST(request: NextRequest) {
       coordinateFields: coordinateFields
     });
 
-  } catch (error) {
-    console.error('Error processing dynamic QR code templates:', error);
+  } catch {
+    console.error('Error processing dynamic QR code templates:');
     return NextResponse.json(
       { error: 'Failed to process dynamic QR code templates' },
       { status: 500 }
@@ -184,8 +184,8 @@ export async function GET(request: NextRequest) {
       }
     });
 
-  } catch (error) {
-    console.error('Error retrieving template coordinate fields:', error);
+  } catch {
+    console.error('Error retrieving template coordinate fields:');
     return NextResponse.json(
       { error: 'Failed to retrieve template coordinate fields' },
       { status: 500 }

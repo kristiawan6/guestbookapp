@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import RealtimeGuestTable from '@/components/realtime-guest-table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+
 import { Users, UserCheck, UserX, Clock } from 'lucide-react';
 
 interface GuestStats {

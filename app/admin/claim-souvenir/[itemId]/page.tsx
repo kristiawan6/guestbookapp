@@ -65,7 +65,7 @@ export default function ClaimDetail({
         transactionsData.data.map((t: Transaction) => [t.guestId, t.timestamp])
       );
 
-      const mergedGuests = guestsData.data.map((g: any) => ({
+      const mergedGuests = guestsData.data.map((g: Guest) => ({
         ...g,
         claimedAt: transactionsMap.get(g.id) || null,
       }));
@@ -88,7 +88,7 @@ export default function ClaimDetail({
         try {
           const url = new URL(data);
           guestId = url.searchParams.get("c") || data;
-        } catch (e) {
+        } catch {
           // Not a valid URL, assume it's a raw ID
         }
 

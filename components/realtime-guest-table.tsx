@@ -67,7 +67,7 @@ interface WhatsAppStatusUpdateEvent {
 interface GuestUpdateEvent {
   guestId: string;
   eventId: string;
-  updatedFields: Record<string, any>;
+  updatedFields: Partial<Guest> & { deleted?: boolean };
   timestamp: string;
 }
 
@@ -95,6 +95,29 @@ export default function RealtimeGuestTable({ eventId, onGuestUpdate }: RealtimeG
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [whatsappFilter, setWhatsappFilter] = useState<string>('all');
+
+  // Fetch guests
+  const fetchGuests = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const response = await fetch(`/api/events/${eventId}/guests?limit=1000`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch guests');
+      }
+      
+      const data = await response.json();
+      const guestData = data.data || [];
+      setGuests(guestData);
+      onGuestUpdate?.(guestData);
+    } catch (err) {
+      console.error('Error fetching guests:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch guests');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [eventId, onGuestUpdate]);
 
   // Socket.io connection
   useEffect(() => {
@@ -156,30 +179,7 @@ export default function RealtimeGuestTable({ eventId, onGuestUpdate }: RealtimeG
       socketInstance.emit('leave-event', eventId);
       socketInstance.disconnect();
     };
-  }, [eventId]);
-
-  // Fetch guests
-  const fetchGuests = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      const response = await fetch(`/api/events/${eventId}/guests?limit=1000`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch guests');
-      }
-      
-      const data = await response.json();
-      const guestData = data.data || [];
-      setGuests(guestData);
-      onGuestUpdate?.(guestData);
-    } catch (err) {
-      console.error('Error fetching guests:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch guests');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [eventId, onGuestUpdate]);
+  }, [eventId, fetchGuests]);
 
   // Initial data fetch
   useEffect(() => {

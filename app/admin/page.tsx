@@ -3,8 +3,6 @@
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { 
   BarChart, 
@@ -14,7 +12,6 @@ import {
   UserX, 
   TrendingUp,
   Activity,
-  Target,
   Gift
 } from "lucide-react";
 import { useStatistics } from "@/hooks/use-statistics";

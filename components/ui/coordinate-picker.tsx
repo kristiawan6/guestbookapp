@@ -41,7 +41,7 @@ export default function CoordinatePicker({
   const [resizingField, setResizingField] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [resizeStartSize, setResizeStartSize] = useState({ width: 0, height: 0 });
-  const [imageLoaded, setImageLoaded] = useState(false);
+
   const [shouldShowFields, setShouldShowFields] = useState(false);
   const [newFieldType, setNewFieldType] = useState<'qr-code' | 'text'>('text');
   const [newFieldLabel, setNewFieldLabel] = useState('');
@@ -192,7 +192,7 @@ export default function CoordinatePicker({
     onFieldsChange(fields.filter(f => f.id !== fieldId));
   };
 
-  const updateFieldProperty = (fieldId: string, property: string, value: any) => {
+  const updateFieldProperty = (fieldId: string, property: string, value: string | number) => {
     const updatedFields = fields.map(field => 
       field.id === fieldId ? { ...field, [property]: value } : field
     );
@@ -290,7 +290,6 @@ export default function CoordinatePicker({
                 alt="Template" 
                 className="w-full h-auto"
                 onLoad={() => {
-                  setImageLoaded(true);
                   setShouldShowFields(true);
                 }}
                 onError={() => {

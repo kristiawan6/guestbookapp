@@ -224,10 +224,7 @@ export async function POST(
       { message: "Broadcast sent successfully" },
       { status: 200 }
     );
-  } catch (err) {
-    if (err instanceof Error) {
-      return NextResponse.json({ message: err.message }, { status: 400 });
-    }
+  } catch {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
   }
 }

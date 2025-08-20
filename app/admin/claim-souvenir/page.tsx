@@ -37,12 +37,7 @@ type ClaimableItem = {
   remainingQuantity: number;
 };
 
-type Meta = {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-};
+
 
 export default function ClaimSouvenirPage() {
   const [items, setItems] = useState<ClaimableItem[]>([]);
@@ -52,10 +47,9 @@ export default function ClaimSouvenirPage() {
   );
   const { selectedEventId, isLoading } = useStatistics();
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [meta, setMeta] = useState<Meta | null>(null);
-  const [sortKey, setSortKey] = useState<keyof ClaimableItem>("name");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [page] = useState(1);
+  const [sortKey] = useState<keyof ClaimableItem>("name");
+  const [sortOrder] = useState<"asc" | "desc">("asc");
 
   const fetchItems = useCallback(() => {
     if (selectedEventId) {
@@ -65,7 +59,6 @@ export default function ClaimSouvenirPage() {
         .then((res) => res.json())
         .then((data) => {
           setItems(data.data);
-          setMeta(data.meta);
         });
     }
   }, [selectedEventId, search, page, sortKey, sortOrder]);

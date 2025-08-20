@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -50,7 +50,7 @@ export function QRCardGenerator({
     }
   }, [isOpen, selectedEventId]);
 
-  const fetchQRTemplates = async () => {
+  const fetchQRTemplates = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(
@@ -67,7 +67,7 @@ export function QRCardGenerator({
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedEventId]);
 
   const handleTemplateSelect = (template: BroadcastTemplate) => {
     setSelectedTemplate(template);

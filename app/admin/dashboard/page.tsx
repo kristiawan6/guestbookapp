@@ -5,8 +5,6 @@ import { useStatistics } from "@/hooks/use-statistics";
 import { 
   AreaChart, 
   Area, 
-  BarChart, 
-  Bar, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
