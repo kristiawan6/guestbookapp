@@ -49,16 +49,20 @@ export const getGuestStatistics = async (eventId: string) => {
     },
   });
 
-  // Calculate RSVP rate (assuming guests with attendance status)
-  const rsvpGuests = await prisma.guest.count({
+  // Calculate attendance statistics
+  const attendedGuests = await prisma.guest.count({
     where: {
       eventId,
       isDeleted: false,
-      // Add RSVP logic here if you have attendance tracking
+      status: 'Attended',
     },
   });
 
-  const rsvpRate = totalGuests > 0 ? Math.round((rsvpGuests / totalGuests) * 100) : 0;
+  const notAttendedGuests = activeGuests - attendedGuests;
+  const attendanceRate = activeGuests > 0 ? Math.round((attendedGuests / activeGuests) * 100) : 0;
+
+  // Calculate RSVP rate (using attendance as proxy)
+  const rsvpRate = totalGuests > 0 ? Math.round((attendedGuests / totalGuests) * 100) : 0;
 
   // Get guest categories distribution
   const guestCategories = await prisma.guestCategory.findMany({
@@ -112,17 +116,39 @@ export const getGuestStatistics = async (eventId: string) => {
       },
     });
     
+    const monthAttendedGuests = await prisma.guest.count({
+      where: {
+        eventId,
+        isDeleted: false,
+        status: 'Attended',
+        createdAt: {
+          gte: date,
+          lt: nextDate,
+        },
+      },
+    });
+    
     monthlyTrends.push({
       month: months[date.getMonth()],
       guests: monthGuests,
       active: monthActiveGuests,
+      attended: monthAttendedGuests,
     });
   }
+
+  // Attendance distribution for pie chart
+  const attendanceDistribution = [
+    { name: 'Attended', value: attendedGuests, color: '#10B981' },
+    { name: 'Not Attended', value: notAttendedGuests, color: '#EF4444' },
+  ];
 
   return {
     totalGuests,
     activeGuests,
     deletedGuests,
+    attendedGuests,
+    notAttendedGuests,
+    attendanceRate,
     totalEvents,
     totalGuestsLastEvent,
     totalMessages,
@@ -131,5 +157,6 @@ export const getGuestStatistics = async (eventId: string) => {
     rsvpRate,
     categoryDistribution,
     monthlyTrends,
+    attendanceDistribution,
   };
 };

@@ -14,11 +14,21 @@ export const guestCategorySchema = z.object({
 });
 
 export const guestSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Invalid email address").optional().or(z.literal("")),
-  phoneNumber: z.string().optional(),
+  name: z.string().min(1, "Fullname is required"),
+  email: z.string().email("Invalid email address").min(1, "Email Address is required"),
+  phoneNumber: z.string().min(1, "Phone Number is required").transform((val) => {
+    // Auto-convert phone numbers starting with 0 to start with 62
+    if (val.startsWith('0')) {
+      return '62' + val.slice(1);
+    }
+    return val;
+  }),
+  guestCategoryId: z.string().min(1, "Guest Category is required"),
+  address: z.string().optional(),
+  numberOfGuests: z.number().int().min(1).default(1).optional(),
+  session: z.string().optional(),
+  tableNumber: z.string().optional(),
   notes: z.string().optional(),
-  guestCategoryId: z.string().min(1, "Guest category is required"),
 });
 
 export const broadcastTemplateSchema = z.object({

@@ -107,14 +107,18 @@ export const sendEmailWithQRCard = async (
   guestName: string
 ): Promise<boolean> => {
   try {
-    console.log(`Reading QR card image from: ${qrCardImagePath}`);
-    const fs = await import("fs/promises");
-
-    // Read the QR card image and convert to base64
-    const imageBuffer = await fs.readFile(qrCardImagePath);
-    const base64Image = imageBuffer.toString("base64");
+    console.log(`Fetching QR card image from: ${qrCardImagePath}`);
+    
+    // Fetch the image from Cloudinary URL
+    const response = await fetch(qrCardImagePath);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+    }
+    
+    const imageBuffer = await response.arrayBuffer();
+    const base64Image = Buffer.from(imageBuffer).toString("base64");
     console.log(
-      `QR card image read successfully, size: ${imageBuffer.length} bytes`
+      `QR card image fetched successfully, size: ${imageBuffer.byteLength} bytes`
     );
 
     const attachment: EmailAttachment = {

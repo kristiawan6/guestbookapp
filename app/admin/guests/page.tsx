@@ -21,6 +21,7 @@ import {
   Hash,
   FileText,
   Sparkles,
+  Camera,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useCallback, useEffect, useState } from "react";
@@ -68,6 +69,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { TemplateSelectionPopup } from "@/components/ui/template-selection-popup";
 import { QRCardGenerator } from "@/components/ui/qr-card-generator";
+import BarcodeScanner from "@/components/ui/barcode-scanner";
 
 type Guest = {
   id: string;
@@ -85,6 +87,7 @@ type Guest = {
 type GuestCategory = {
   id: string;
   name: string;
+  quota?: number;
 };
 
 type Meta = {
@@ -122,6 +125,7 @@ export default function GuestPage() {
   const [individualEmailGuest, setIndividualEmailGuest] = useState<Guest | null>(null);
   const [isIndividualWhatsAppTemplateOpen, setIsIndividualWhatsAppTemplateOpen] = useState(false);
   const [individualWhatsAppGuest, setIndividualWhatsAppGuest] = useState<Guest | null>(null);
+  const [isAttendanceScannerOpen, setIsAttendanceScannerOpen] = useState(false);
 
   const fetchGuests = useCallback(() => {
     if (selectedEventId) {
@@ -164,30 +168,105 @@ export default function GuestPage() {
       console.error("Event ID is not available.");
       return;
     }
+    
     const formData = new FormData(event.currentTarget);
-    const data = Object.fromEntries(formData.entries());
-
-    if (selectedGuest) {
-      await fetch(`/api/events/${selectedEventId}/guests/${selectedGuest.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
+    const rawData = Object.fromEntries(formData.entries());
+    
+    // Client-side validation for required fields
+    if (!rawData.name || !rawData.email || !rawData.phoneNumber || !rawData.guestCategoryId) {
+      Swal.fire({
+        title: "Validation Error",
+        text: "Please fill in all required fields: Fullname, Guest Category, Phone Number, and Email Address.",
+        icon: "error",
+        timer: 3000,
+        timerProgressBar: true
       });
-    } else {
-      await fetch(`/api/events/${selectedEventId}/guests`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
+      return;
+    }
+    
+    // Format phone number (0 to 62 conversion)
+    let phoneNumber = rawData.phoneNumber as string;
+    if (phoneNumber.startsWith('0')) {
+      phoneNumber = '62' + phoneNumber.slice(1);
+    }
+    
+    // Prepare data with defaults for new guests
+    const data = {
+      ...rawData,
+      phoneNumber,
+      numberOfGuests: rawData.numberOfGuests ? Number(rawData.numberOfGuests) : 1,
+      // Set default values for new guests
+      ...(!selectedGuest && {
+        signed: "Not Sign",
+        whatsappStatus: "Not Sent",
+        emailStatus: "Not Sent",
+        webStatus: "Viewed",
+        dateArrival: null
+      })
+    };
+    
+    // Check category quota for new guests
+    if (!selectedGuest) {
+      const guestCategoryId = rawData.guestCategoryId as string;
+      const selectedCategory = guestCategories.find(cat => cat.id === guestCategoryId);
+      if (selectedCategory?.quota) {
+        const currentCategoryGuests = guests.filter(guest => guest.guestCategoryId === guestCategoryId);
+        if (currentCategoryGuests.length >= selectedCategory.quota) {
+          Swal.fire({
+            title: "Category Quota Full",
+            text: `The category "${selectedCategory.name}" has reached its maximum quota of ${selectedCategory.quota} guests.`,
+            icon: "error",
+            timer: 3000,
+            timerProgressBar: true
+          });
+          return;
+        }
+      }
     }
 
-    fetchGuests();
-    setIsDialogOpen(false);
-    setSelectedGuest(null);
+    try {
+      const response = selectedGuest 
+        ? await fetch(`/api/events/${selectedEventId}/guests/${selectedGuest.id}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+          })
+        : await fetch(`/api/events/${selectedEventId}/guests`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+          });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to save guest');
+      }
+      
+      fetchGuests();
+      setIsDialogOpen(false);
+      setSelectedGuest(null);
+      
+      Swal.fire({
+        title: "Success!",
+        text: selectedGuest ? "Guest updated successfully!" : "Guest created successfully with QR code!",
+        icon: "success",
+        timer: 2000,
+        timerProgressBar: true
+      });
+    } catch (error) {
+      console.error('Error saving guest:', error);
+      Swal.fire({
+        title: "Error!",
+        text: error instanceof Error ? error.message : "Failed to save guest. Please try again.",
+        icon: "error",
+        timer: 3000,
+        timerProgressBar: true
+      });
+    }
   };
 
   const handleEdit = (guest: Guest) => {
@@ -423,6 +502,72 @@ export default function GuestPage() {
       }
     });
   };
+
+  const handleAttendanceScan = useCallback(
+    async (data: string) => {
+      if (data) {
+        let guestId = data;
+        try {
+          const url = new URL(data);
+          guestId = url.searchParams.get("c") || data;
+        } catch {
+          // Not a valid URL, assume it's a raw ID
+        }
+
+        try {
+          const response = await fetch(
+            `/api/events/${selectedEventId}/guests/${guestId}/attendance`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+              Swal.fire({
+                icon: "success",
+                title: "Attendance Recorded",
+                text: `${result.guest.name} attendance has been recorded`,
+                showConfirmButton: false,
+                timer: 2000,
+              });
+            }
+
+            setIsAttendanceScannerOpen(false);
+            fetchGuests();
+          } else {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Failed to record attendance");
+          }
+        } catch (error: unknown) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "An unexpected error occurred";
+          Swal.fire({
+            icon: "error",
+            title: "Operation Failed",
+            text: message,
+          });
+        }
+      }
+    },
+    [fetchGuests, selectedEventId]
+  );
+
+  const handleAttendanceScannerError = useCallback((error: Error) => {
+    console.error("Scanner Error:", error);
+    Swal.fire({
+      icon: "error",
+      title: "Scanner Error",
+      text: error.message || "Could not access the camera.",
+    });
+    setIsAttendanceScannerOpen(false);
+  }, []);
 
   const handleExport = async () => {
     if (!selectedEventId) {
@@ -708,6 +853,14 @@ export default function GuestPage() {
               
               <Button variant="outline" className="border-gray-300 hover:bg-gray-50 text-sm sm:w-auto w-full">
                 <Printer className="mr-1 sm:mr-2 h-4 w-4" /> Print
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="border-gray-300 hover:bg-gray-50 text-sm sm:w-auto w-full"
+                onClick={() => setIsAttendanceScannerOpen(true)}
+              >
+                <Camera className="mr-1 sm:mr-2 h-4 w-4" /> Attendance
               </Button>
             </div>
             
@@ -1069,7 +1222,7 @@ export default function GuestPage() {
                       <div className="space-y-2">
                         <Label htmlFor="phoneNumber" className="flex items-center gap-2 font-medium">
                           <Phone className="h-4 w-4 text-gray-500" />
-                          Phone Number
+                          Phone Number *
                         </Label>
                         <Input
                           id="phoneNumber"
@@ -1077,12 +1230,13 @@ export default function GuestPage() {
                           defaultValue={selectedGuest?.phoneNumber}
                           placeholder="Enter phone number"
                           className="focus:ring-2 focus:ring-blue-500"
+                          required
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="email" className="flex items-center gap-2 font-medium">
                           <Mail className="h-4 w-4 text-gray-500" />
-                          Email Address
+                          Email Address *
                         </Label>
                         <Input
                           id="email"
@@ -1091,6 +1245,7 @@ export default function GuestPage() {
                           defaultValue={selectedGuest?.email}
                           placeholder="Enter email address"
                           className="focus:ring-2 focus:ring-blue-500"
+                          required
                         />
                       </div>
                     </div>
@@ -1339,6 +1494,29 @@ export default function GuestPage() {
         onClose={() => setIsQRCardGeneratorOpen(false)}
         selectedGuestIds={selectedGuests}
       />
+
+      {/* Attendance Scanner Dialog */}
+      <Dialog open={isAttendanceScannerOpen} onOpenChange={setIsAttendanceScannerOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Scan Guest QR Code for Attendance</DialogTitle>
+          </DialogHeader>
+          <div className="flex justify-center p-4">
+            <BarcodeScanner
+              onScan={handleAttendanceScan}
+              onError={handleAttendanceScannerError}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsAttendanceScannerOpen(false)}
+            >
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

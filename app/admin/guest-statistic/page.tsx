@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useStatistics } from "@/hooks/use-statistics";
-import { BarChart, Users, UserCheck, UserX, TrendingUp, Calendar, Target } from "lucide-react";
+import { BarChart, Users, UserCheck, UserX, TrendingUp, Calendar, Target, CheckCircle } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, AreaChart, Area } from 'recharts';
 
 interface CategoryDataItem {
@@ -71,8 +71,18 @@ export default function GuestStatisticPage() {
       changeType: "decrease"
     },
     {
-      title: "RSVP Rate",
-      value: statistics?.rsvpRate || 0,
+      title: "Attended Guests",
+      value: statistics?.attendedGuests || 0,
+      icon: CheckCircle,
+      color: "bg-gradient-to-r from-green-500 to-green-600",
+      bgColor: "bg-green-100",
+      textColor: "text-green-600",
+      change: "+15%",
+      changeType: "increase"
+    },
+    {
+      title: "Attendance Rate",
+      value: statistics?.attendanceRate || 0,
       icon: Target,
       color: "bg-gradient-to-r from-blue-500 to-blue-600",
       bgColor: "bg-blue-100",
@@ -85,12 +95,17 @@ export default function GuestStatisticPage() {
 
   // Chart data from backend
   const guestTrendData = statistics?.monthlyTrends || [
-    { month: 'Jan', guests: 120, active: 95 },
-    { month: 'Feb', guests: 150, active: 120 },
-    { month: 'Mar', guests: 180, active: 145 },
-    { month: 'Apr', guests: 200, active: 160 },
-    { month: 'May', guests: 220, active: 180 },
-    { month: 'Jun', guests: statistics?.totalGuests || 250, active: statistics?.activeGuests || 200 },
+    { month: 'Jan', guests: 120, active: 95, attended: 80 },
+    { month: 'Feb', guests: 150, active: 120, attended: 100 },
+    { month: 'Mar', guests: 180, active: 145, attended: 120 },
+    { month: 'Apr', guests: 200, active: 160, attended: 140 },
+    { month: 'May', guests: 220, active: 180, attended: 160 },
+    { month: 'Jun', guests: statistics?.totalGuests || 250, active: statistics?.activeGuests || 200, attended: statistics?.attendedGuests || 180 },
+  ];
+
+  const attendanceData: CategoryDataItem[] = statistics?.attendanceDistribution || [
+    { name: 'Attended', value: 180, color: '#10B981' },
+    { name: 'Not Attended', value: 70, color: '#EF4444' },
   ];
 
   const categoryData: CategoryDataItem[] = statistics?.categoryDistribution || [
@@ -199,13 +214,61 @@ export default function GuestStatisticPage() {
                     fillOpacity={0.6}
                     name="Active Guests"
                   />
+                  <Area 
+                    type="monotone" 
+                    dataKey="attended" 
+                    stackId="3" 
+                    stroke="#059669" 
+                    fill="#059669" 
+                    fillOpacity={0.8}
+                    name="Attended Guests"
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
 
-        {/* Guest Categories Distribution */}
+        {/* Attendance Distribution */}
+        <Card className="border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-gray-900">Attendance Status</CardTitle>
+            <p className="text-sm text-gray-600">Distribution of guest attendance</p>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={attendanceData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {attendanceData.map((entry: CategoryDataItem, index: number) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'white',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Guest Categories Distribution */}
         <Card className="border-0 shadow-lg">
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-gray-900">Guest Categories</CardTitle>
@@ -242,54 +305,59 @@ export default function GuestStatisticPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Additional Statistics */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900">Monthly Guest Activity</CardTitle>
-          <p className="text-sm text-gray-600">Detailed breakdown of guest registrations and activities</p>
-        </CardHeader>
-        <CardContent>
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <RechartsBarChart data={guestTrendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis 
-                  dataKey="month" 
-                  stroke="#6b7280"
-                  fontSize={12}
-                />
-                <YAxis 
-                  stroke="#6b7280"
-                  fontSize={12}
-                />
-                <Tooltip 
-                  contentStyle={{
-                    backgroundColor: 'white',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                  }}
-                />
-                <Legend />
-                <Bar 
-                  dataKey="guests" 
-                  fill="#8B5CF6" 
-                  name="Total Guests"
-                  radius={[4, 4, 0, 0]}
-                />
-                <Bar 
-                  dataKey="active" 
-                  fill="#10B981" 
-                  name="Active Guests"
-                  radius={[4, 4, 0, 0]}
-                />
-              </RechartsBarChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+        {/* Monthly Guest Activity */}
+        <Card className="border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-gray-900">Monthly Activity</CardTitle>
+            <p className="text-sm text-gray-600">Guest activity trends by month</p>
+          </CardHeader>
+          <CardContent>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsBarChart data={guestTrendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis 
+                    dataKey="month" 
+                    stroke="#6b7280"
+                    fontSize={12}
+                  />
+                  <YAxis 
+                    stroke="#6b7280"
+                    fontSize={12}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'white',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Legend />
+                  <Bar 
+                    dataKey="guests" 
+                    fill="#3B82F6" 
+                    name="Total Guests"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Bar 
+                    dataKey="active" 
+                    fill="#10B981" 
+                    name="Active Guests"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Bar 
+                    dataKey="attended" 
+                    fill="#059669" 
+                    name="Attended Guests"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </RechartsBarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
     </div>
   );
 }

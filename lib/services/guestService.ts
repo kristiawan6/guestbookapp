@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { generateQrCode } from "./qrService";
 import * as XLSX from "xlsx";
+import { WhatsAppStatus } from "@prisma/client";
 
 interface GuestData {
   name: string;
@@ -11,6 +12,8 @@ interface GuestData {
   session?: string;
   tableNumber?: string;
   guestCategoryId?: string;
+  notes?: string;
+  whatsappStatus?: WhatsAppStatus;
 }
 
 export const createGuest = async (eventId: string, data: GuestData) => {
@@ -23,10 +26,29 @@ export const createGuest = async (eventId: string, data: GuestData) => {
     session,
     tableNumber,
     guestCategoryId,
+    notes,
+    whatsappStatus,
   } = data;
 
-  if (!name) {
-    throw new Error("Missing required fields");
+  // Validate required fields
+  if (!name || !email || !phoneNumber || !guestCategoryId) {
+    throw new Error("Missing required fields: Fullname, Email Address, Phone Number, and Guest Category are required");
+  }
+
+  // Check if guest category exists and has quota
+  if (guestCategoryId) {
+    const category = await prisma.guestCategory.findUnique({
+      where: { id: guestCategoryId },
+      include: { _count: { select: { guests: true } } }
+    });
+    
+    if (!category) {
+      throw new Error("Invalid guest category");
+    }
+    
+    if (category.quota && category._count.guests >= category.quota) {
+      throw new Error(`Category "${category.name}" has reached its maximum quota of ${category.quota} guests`);
+    }
   }
 
   const guest = await prisma.guest.create({
@@ -35,9 +57,12 @@ export const createGuest = async (eventId: string, data: GuestData) => {
       email,
       phoneNumber,
       address,
-      numberOfGuests: Number(numberOfGuests),
+      numberOfGuests: numberOfGuests || 1, // Default to 1 if not provided
       session,
       tableNumber,
+      notes,
+      // Set default WhatsApp status
+      whatsappStatus: whatsappStatus || WhatsAppStatus.NotSent,
       event: {
         connect: {
           id: eventId,
@@ -53,6 +78,7 @@ export const createGuest = async (eventId: string, data: GuestData) => {
     },
   });
 
+  // Auto-generate QR code for every new guest
   const qrCode = await generateQrCode(guest.id);
   
   // Update the guest with the generated QR code

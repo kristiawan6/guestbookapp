@@ -425,7 +425,7 @@ export default function BroadcastTemplateForm({
                       Message Content *
                     </Label>
                     <SunEditor
-                      setContents={content}
+                      defaultValue={content}
                       onChange={setContent}
                       getSunEditorInstance={getSunEditorInstance}
                       setOptions={{
