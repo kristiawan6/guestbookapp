@@ -2,6 +2,8 @@ import { Resend } from "resend";
 import { OtpEmail } from "@/emails/otp-email";
 import { BroadcastEmail } from "@/emails/broadcast-email";
 import React from "react";
+import prisma from "@/lib/prisma";
+import { emitEmailStatusUpdate } from "@/lib/socket";
 
 // Initialize Resend only if API key is available
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
@@ -44,12 +46,40 @@ interface EmailAttachment {
   contentType?: string; // MIME type
 }
 
+// Sanitize HTML content for email safety
+const sanitizeEmailContent = (content: string): string => {
+  return content
+    // Remove potentially dangerous tags
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '')
+    .replace(/<object[^>]*>[\s\S]*?<\/object>/gi, '')
+    .replace(/<embed[^>]*>/gi, '')
+    .replace(/<link[^>]*>/gi, '')
+    .replace(/<meta[^>]*>/gi, '')
+    // Clean up common formatting issues
+    .replace(/&nbsp;/g, ' ')
+    .replace(/<br\s*\/?>/gi, '<br/>')
+    // Ensure proper spacing for paragraphs
+    .replace(/<p>/gi, '<p style="margin: 0 0 16px 0;">')
+    .replace(/<div>/gi, '<div style="margin-bottom: 8px;">')
+    // Add inline styles for better email client compatibility
+    .replace(/<strong>/gi, '<strong style="font-weight: bold;">')
+    .replace(/<b>/gi, '<b style="font-weight: bold;">')
+    .replace(/<em>/gi, '<em style="font-style: italic;">')
+    .replace(/<i>/gi, '<i style="font-style: italic;">')
+    .replace(/<ul>/gi, '<ul style="margin: 0 0 16px 0; padding-left: 20px;">')
+    .replace(/<ol>/gi, '<ol style="margin: 0 0 16px 0; padding-left: 20px;">')
+    .replace(/<li>/gi, '<li style="margin-bottom: 8px;">')
+    .trim();
+};
+
 // General email function for bulk messaging
 export const sendEmail = async (
   to: string,
   subject: string,
   message: string,
-  attachments?: EmailAttachment[]
+  attachments?: EmailAttachment[],
+  guestId?: string
 ): Promise<boolean> => {
   try {
     if (!process.env.RESEND_API_KEY || !resend) {
@@ -67,6 +97,9 @@ export const sendEmail = async (
       return true; // Return true for development/testing purposes
     }
 
+    // Sanitize message content for production safety
+    const sanitizedMessage = sanitizeEmailContent(message);
+
     const emailData: {
       from: string;
       to: string;
@@ -74,10 +107,10 @@ export const sendEmail = async (
       react: React.ReactElement;
       attachments?: EmailAttachment[];
     } = {
-      from:"no-reply@williamkristiawan.site",
+      from: process.env.EMAIL_FROM || "no-reply@williamkristiawan.site",
       to,
       subject,
-      react: BroadcastEmail({ message }) as React.ReactElement,
+      react: BroadcastEmail({ message: sanitizedMessage, guestId }) as React.ReactElement,
     };
 
     if (attachments && attachments.length > 0) {
@@ -91,6 +124,29 @@ export const sendEmail = async (
     }
 
     await resend.emails.send(emailData);
+    
+    if (guestId) {
+      try {
+        const updatedGuest = await prisma.guest.update({
+          where: { id: guestId },
+          data: { emailStatus: 'Sent' },
+          select: { eventId: true }
+        });
+        
+        // Emit Socket.io event for real-time updates
+        emitEmailStatusUpdate({
+          guestId,
+          eventId: updatedGuest.eventId,
+          status: 'Sent',
+          timestamp: new Date().toISOString()
+        });
+        
+        console.log(`Updated email status to 'Sent' for guest ${guestId}`);
+      } catch (error) {
+        console.error(`Failed to update email status for guest ${guestId}:`, error);
+      }
+    }
+    
     return true;
   } catch (error) {
     console.error("Error sending email:", error);
@@ -104,7 +160,8 @@ export const sendEmailWithQRCard = async (
   subject: string,
   message: string,
   qrCardImagePath: string,
-  guestName: string
+  guestName: string,
+  guestId?: string
 ): Promise<boolean> => {
   try {
     console.log(`Fetching QR card image from: ${qrCardImagePath}`);
@@ -128,7 +185,7 @@ export const sendEmailWithQRCard = async (
     };
 
     console.log(`Sending email with attachment: ${attachment.filename}`);
-    const result = await sendEmail(to, subject, message, [attachment]);
+    const result = await sendEmail(to, subject, message, [attachment], guestId);
     console.log(`Email with QR card sent successfully: ${result}`);
     return result;
   } catch (error) {

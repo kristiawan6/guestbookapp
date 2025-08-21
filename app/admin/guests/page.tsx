@@ -82,6 +82,14 @@ type Guest = {
   tableNumber: string;
   guestCategoryId: string;
   notes: string;
+  whatsappStatus: string;
+  signed: string;
+  emailStatus: string;
+  webStatus: string;
+  dateArrival: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 type GuestCategory = {
@@ -126,6 +134,30 @@ export default function GuestPage() {
   const [isIndividualWhatsAppTemplateOpen, setIsIndividualWhatsAppTemplateOpen] = useState(false);
   const [individualWhatsAppGuest, setIndividualWhatsAppGuest] = useState<Guest | null>(null);
   const [isAttendanceScannerOpen, setIsAttendanceScannerOpen] = useState(false);
+
+  // Calculate dynamic statistics
+  const attendedGuests = guests.filter(guest => guest.dateArrival !== null).length;
+  const notAttendedGuests = guests.length - attendedGuests;
+  
+  // Calculate guest category distribution
+  const categoryDistribution = guestCategories.map(category => {
+    const count = guests.filter(guest => guest.guestCategoryId === category.id).length;
+    return {
+      name: category.name,
+      value: count,
+      color: getRandomColor(category.id)
+    };
+  }).filter(item => item.value > 0);
+
+  // Helper function to generate consistent colors based on category ID
+  function getRandomColor(categoryId: string) {
+    const colors = ['#10b981', '#3b82f6', '#ef4444', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+    let hash = 0;
+    for (let i = 0; i < categoryId.length; i++) {
+      hash = categoryId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  }
 
   const fetchGuests = useCallback(() => {
     if (selectedEventId) {
@@ -508,10 +540,19 @@ export default function GuestPage() {
       if (data) {
         let guestId = data;
         try {
-          const url = new URL(data);
-          guestId = url.searchParams.get("c") || data;
+          // First try to parse as JSON (for QR codes with guest data)
+          const parsedData = JSON.parse(data);
+          if (parsedData && parsedData.id) {
+            guestId = parsedData.id;
+          }
         } catch {
-          // Not a valid URL, assume it's a raw ID
+          // Not JSON, try URL parsing
+          try {
+            const url = new URL(data);
+            guestId = url.searchParams.get("c") || data;
+          } catch {
+            // Not a valid URL, assume it's a raw ID
+          }
         }
 
         try {
@@ -662,9 +703,8 @@ export default function GuestPage() {
                   <PieChart>
                     <Pie
                       data={[
-                        { name: "Present", value: 303, color: "#10b981" },
-                        { name: "Virtual", value: 0, color: "#3b82f6" },
-                        { name: "Absent", value: 19, color: "#ef4444" }
+                        { name: "Attended", value: attendedGuests, color: "#10b981" },
+                        { name: "Not Attended", value: notAttendedGuests, color: "#ef4444" }
                       ]}
                       cx="50%"
                       cy="50%"
@@ -674,14 +714,13 @@ export default function GuestPage() {
                       dataKey="value"
                     >
                       <Cell fill="#10b981" />
-                      <Cell fill="#3b82f6" />
                       <Cell fill="#ef4444" />
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
-                    <div className="text-xl font-bold text-gray-900">322</div>
+                    <div className="text-xl font-bold text-gray-900">{guests.length}</div>
                     <div className="text-xs text-gray-500">Total</div>
                   </div>
                 </div>
@@ -691,93 +730,73 @@ export default function GuestPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <div className="w-3 h-3 bg-emerald-500 rounded-full mr-3"></div>
-                    <span className="text-sm font-medium text-gray-700">Present</span>
+                    <span className="text-sm font-medium text-gray-700">Attended</span>
                   </div>
-                  <span className="text-sm font-semibold text-gray-900">303</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
-                    <span className="text-sm font-medium text-gray-700">Virtual</span>
-                  </div>
-                  <span className="text-sm font-semibold text-gray-900">0</span>
+                  <span className="text-sm font-semibold text-gray-900">{attendedGuests}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <div className="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
-                    <span className="text-sm font-medium text-gray-700">Absent</span>
+                    <span className="text-sm font-medium text-gray-700">Not Attended</span>
                   </div>
-                  <span className="text-sm font-semibold text-gray-900">19</span>
+                  <span className="text-sm font-semibold text-gray-900">{notAttendedGuests}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* RSVP Status Card */}
+          {/* Guest Category Distribution Card */}
           <div className="bg-white border-0 shadow-lg rounded-xl p-6 hover:shadow-xl transition-shadow duration-300">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">RSVP Status</h3>
-              <div className="text-sm text-gray-500">Response Rate: 85%</div>
+              <h3 className="text-lg font-semibold text-gray-900">Guest Categories</h3>
+              <div className="text-sm text-gray-500">Total: {guests.length} Guests</div>
             </div>
             
-            <div className="flex items-center space-x-6">
-              <div className="relative">
-                <ResponsiveContainer width={120} height={120}>
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: "Going", value: 269, color: "#10b981" },
-                        { name: "Not Going", value: 0, color: "#ef4444" },
-                        { name: "Virtual Attendance", value: 0, color: "#8b5cf6" },
-                        { name: "Not Submit", value: 53, color: "#e5e7eb" },
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={35}
-                      outerRadius={55}
-                      paddingAngle={3}
-                      dataKey="value"
-                    >
-                      <Cell fill="#10b981" />
-                      <Cell fill="#ef4444" />
-                      <Cell fill="#8b5cf6" />
-                      <Cell fill="#e5e7eb" />
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              
-              <div className="flex-1 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-emerald-500 rounded-full mr-3"></div>
-                    <span className="text-sm font-medium text-gray-700">Confirmed</span>
+            {categoryDistribution.length > 0 ? (
+              <div className="flex items-center space-x-6">
+                <div className="relative">
+                  <ResponsiveContainer width={120} height={120}>
+                    <PieChart>
+                      <Pie
+                        data={categoryDistribution}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={35}
+                        outerRadius={55}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {categoryDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-gray-900">{guests.length}</div>
+                      <div className="text-xs text-gray-500">Total</div>
+                    </div>
                   </div>
-                  <span className="text-sm font-semibold text-gray-900">269</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
-                    <span className="text-sm font-medium text-gray-700">Declined</span>
-                  </div>
-                  <span className="text-sm font-semibold text-gray-900">0</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-purple-500 rounded-full mr-3"></div>
-                    <span className="text-sm font-medium text-gray-700">Virtual Only</span>
-                  </div>
-                  <span className="text-sm font-semibold text-gray-900">0</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-3 h-3 bg-gray-300 rounded-full mr-3"></div>
-                    <span className="text-sm font-medium text-gray-700">No Response</span>
-                  </div>
-                  <span className="text-sm font-semibold text-gray-900">53</span>
+                
+                <div className="flex-1 space-y-3">
+                  {categoryDistribution.map((category, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full mr-3" style={{ backgroundColor: category.color }}></div>
+                        <span className="text-sm font-medium text-gray-700">{category.name}</span>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-900">{category.value}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="text-center py-8">
+                <div className="text-gray-500">No guest categories available</div>
+              </div>
+            )}
           </div>
         </div>
         {/* Action Bar */}
@@ -1054,9 +1073,13 @@ export default function GuestPage() {
                     </TableCell>
                     <TableCell className="hidden xl:table-cell py-4 text-gray-700 max-w-xs truncate text-sm">{guest.address || '-'}</TableCell>
                     <TableCell className="hidden xl:table-cell py-4 text-gray-700 max-w-xs truncate text-sm">{guest.notes || '-'}</TableCell>
-                    <TableCell className="hidden lg:table-cell py-4 text-gray-600 text-sm">2024-07-06</TableCell>
-                    <TableCell className="hidden xl:table-cell py-4 text-gray-600 text-sm">Admin</TableCell>
-                    <TableCell className="hidden xl:table-cell py-4 text-gray-600 text-sm">2024-07-06</TableCell>
+                    <TableCell className="hidden lg:table-cell py-4 text-gray-600 text-sm">
+                      {guest.createdAt ? new Date(guest.createdAt).toLocaleDateString() : '-'}
+                    </TableCell>
+                    <TableCell className="hidden xl:table-cell py-4 text-gray-600 text-sm">{guest.createdBy || '-'}</TableCell>
+                    <TableCell className="hidden xl:table-cell py-4 text-gray-600 text-sm">
+                      {guest.dateArrival ? new Date(guest.dateArrival).toLocaleDateString() : '-'}
+                    </TableCell>
                     <TableCell className="hidden lg:table-cell py-4">
                       <span className="inline-flex items-center px-2 py-1 rounded-md text-sm font-medium bg-gray-100 text-gray-800">
                         {guest.numberOfGuests}
@@ -1065,23 +1088,39 @@ export default function GuestPage() {
                     <TableCell className="hidden xl:table-cell py-4 text-gray-700 text-sm">{guest.session || '-'}</TableCell>
                     <TableCell className="hidden lg:table-cell py-4 text-gray-700 text-sm">{guest.tableNumber || '-'}</TableCell>
                     <TableCell className="hidden xl:table-cell py-4">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Signed
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        guest.signed === 'Signed' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {guest.signed || 'Not Sign'}
                       </span>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell py-4">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Sent
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        guest.whatsappStatus === 'Sent' || guest.whatsappStatus === 'Delivered' || guest.whatsappStatus === 'Read' 
+                          ? 'bg-green-100 text-green-800' 
+                          : guest.whatsappStatus === 'Failed' 
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {guest.whatsappStatus || 'NotSent'}
                       </span>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell py-4">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Sent
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        guest.emailStatus === 'Sent' || guest.emailStatus === 'Delivered' || guest.emailStatus === 'Read'
+                          ? 'bg-green-100 text-green-800'
+                          : guest.emailStatus === 'Failed'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {guest.emailStatus || 'NotSent'}
                       </span>
                     </TableCell>
                     <TableCell className="hidden xl:table-cell py-4">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        Viewed
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                        guest.webStatus === 'Viewed' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'
+                      }`}>
+                        {guest.webStatus || 'Not Viewed'}
                       </span>
                     </TableCell>
                     <TableCell className="py-4">

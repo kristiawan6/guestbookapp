@@ -1,6 +1,15 @@
 "use client";
 
-import { Pencil, Trash2, Plus, MessageSquare, Mail, Search, Send, FileText } from "lucide-react";
+import {
+  Pencil,
+  Trash2,
+  Plus,
+  MessageSquare,
+  Mail,
+  Search,
+  Send,
+  FileText,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,15 +48,19 @@ export default function BroadcastTemplatePage() {
   const fetchTemplateCounts = useCallback(() => {
     if (selectedEventId) {
       // Fetch WhatsApp template count
-      fetch(`/api/events/${selectedEventId}/broadcast-templates?type=whatsapp&limit=1`)
+      fetch(
+        `/api/events/${selectedEventId}/broadcast-templates?type=whatsapp&limit=1`
+      )
         .then((res) => res.json())
         .then((data) => {
           setWhatsappCount(data.meta?.total || 0);
         })
         .catch(() => setWhatsappCount(0));
-      
+
       // Fetch Email template count
-      fetch(`/api/events/${selectedEventId}/broadcast-templates?type=email&limit=1`)
+      fetch(
+        `/api/events/${selectedEventId}/broadcast-templates?type=email&limit=1`
+      )
         .then((res) => res.json())
         .then((data) => {
           setEmailCount(data.meta?.total || 0);
@@ -117,7 +130,9 @@ export default function BroadcastTemplatePage() {
               <Mail className="h-6 w-6 text-blue-600" />
               Broadcast Templates
             </h1>
-            <p className="text-gray-600 mt-1">Manage your WhatsApp and Email broadcast templates</p>
+            <p className="text-gray-600 mt-1">
+              Manage your WhatsApp and Email broadcast templates
+            </p>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -141,11 +156,14 @@ export default function BroadcastTemplatePage() {
               <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
                 <FileText className="h-6 w-6 text-purple-600" />
               </div>
-              <div className="text-xs font-medium text-green-600">+18%</div>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Total Templates</p>
-              <p className="text-2xl font-bold text-gray-900">{whatsappCount + emailCount}</p>
+              <p className="text-sm font-medium text-gray-600 mb-1">
+                Total Templates
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {whatsappCount + emailCount}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -156,11 +174,14 @@ export default function BroadcastTemplatePage() {
               <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
                 <MessageSquare className="h-6 w-6 text-green-600" />
               </div>
-              <div className="text-xs font-medium text-green-600">+25%</div>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">WhatsApp Templates</p>
-              <p className="text-2xl font-bold text-gray-900">{whatsappCount}</p>
+              <p className="text-sm font-medium text-gray-600 mb-1">
+                WhatsApp Templates
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {whatsappCount}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -171,10 +192,11 @@ export default function BroadcastTemplatePage() {
               <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
                 <Mail className="h-6 w-6 text-blue-600" />
               </div>
-              <div className="text-xs font-medium text-green-600">+12%</div>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Email Templates</p>
+              <p className="text-sm font-medium text-gray-600 mb-1">
+                Email Templates
+              </p>
               <p className="text-2xl font-bold text-gray-900">{emailCount}</p>
             </div>
           </CardContent>
@@ -186,11 +208,14 @@ export default function BroadcastTemplatePage() {
               <div className="h-12 w-12 rounded-lg bg-orange-100 flex items-center justify-center">
                 <Send className="h-6 w-6 text-orange-600" />
               </div>
-              <div className="text-xs font-medium text-green-600">+8%</div>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">Active Templates</p>
-              <p className="text-2xl font-bold text-gray-900">{templates.length}</p>
+              <p className="text-sm font-medium text-gray-600 mb-1">
+                Active Templates
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                {templates.length}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -210,11 +235,13 @@ export default function BroadcastTemplatePage() {
               <div className="flex items-center justify-center gap-2">
                 <MessageSquare className="h-4 w-4" />
                 WhatsApp Templates
-                <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                  activeTab === "whatsapp" 
-                    ? "bg-green-100 text-green-700" 
-                    : "bg-gray-100 text-gray-600"
-                }`}>
+                <span
+                  className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                    activeTab === "whatsapp"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
+                >
                   {whatsappCount}
                 </span>
               </div>
@@ -230,11 +257,13 @@ export default function BroadcastTemplatePage() {
               <div className="flex items-center justify-center gap-2">
                 <Mail className="h-4 w-4" />
                 Email Templates
-                <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                  activeTab === "email" 
-                    ? "bg-blue-100 text-blue-700" 
-                    : "bg-gray-100 text-gray-600"
-                }`}>
+                <span
+                  className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                    activeTab === "email"
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
+                >
                   {emailCount}
                 </span>
               </div>
@@ -247,45 +276,57 @@ export default function BroadcastTemplatePage() {
             <Link href={`/admin/broadcast/add?type=${activeTab}`}>
               <div className="group w-full min-h-[12rem] h-full bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center cursor-pointer hover:border-emerald-400 hover:bg-gradient-to-br hover:from-emerald-50 hover:to-emerald-100 transition-all duration-200">
                 <div className="text-center">
-                  <div className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-3 ${
-                    activeTab === 'whatsapp' 
-                      ? 'bg-green-100 text-green-600 group-hover:bg-green-200' 
-                      : 'bg-blue-100 text-blue-600 group-hover:bg-blue-200'
-                  }`}>
+                  <div
+                    className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-3 ${
+                      activeTab === "whatsapp"
+                        ? "bg-green-100 text-green-600 group-hover:bg-green-200"
+                        : "bg-blue-100 text-blue-600 group-hover:bg-blue-200"
+                    }`}
+                  >
                     <Plus className="h-6 w-6" />
                   </div>
                   <p className="text-sm font-medium text-gray-700 group-hover:text-gray-900">
-                    Add {activeTab === 'whatsapp' ? 'WhatsApp' : 'Email'} Template
+                    Add {activeTab === "whatsapp" ? "WhatsApp" : "Email"}{" "}
+                    Template
                   </p>
                 </div>
               </div>
             </Link>
             {templates.map((template) => (
-              <Card key={template.id} className="border-0 shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden group">
+              <Card
+                key={template.id}
+                className="border-0 shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden group"
+              >
                 <CardContent className="p-4">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        {template.type === 'whatsapp' ? (
+                        {template.type === "whatsapp" ? (
                           <MessageSquare className="h-4 w-4 text-green-600" />
                         ) : (
                           <Mail className="h-4 w-4 text-blue-600" />
                         )}
-                        <h3 className="font-semibold text-gray-900 text-sm truncate">{template.name}</h3>
+                        <h3 className="font-semibold text-gray-900 text-sm truncate">
+                          {template.name}
+                        </h3>
                       </div>
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
-                        template.type === 'whatsapp' 
-                          ? 'bg-green-100 text-green-800 border-green-200' 
-                          : 'bg-blue-100 text-blue-800 border-blue-200'
-                      }`}>
-                        {template.type === 'whatsapp' ? 'WhatsApp' : 'Email'}
+                      <span
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
+                          template.type === "whatsapp"
+                            ? "bg-green-100 text-green-800 border-green-200"
+                            : "bg-blue-100 text-blue-800 border-blue-200"
+                        }`}
+                      >
+                        {template.type === "whatsapp" ? "WhatsApp" : "Email"}
                       </span>
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => router.push(`/admin/broadcast/edit/${template.id}`)}
+                        onClick={() =>
+                          router.push(`/admin/broadcast/edit/${template.id}`)
+                        }
                         className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200"
                       >
                         <Pencil className="h-3 w-3" />
@@ -300,11 +341,13 @@ export default function BroadcastTemplatePage() {
                       </Button>
                     </div>
                   </div>
-                  <div className={`p-3 rounded-lg border-2 border-dashed transition-colors duration-200 ${
-                    template.type === 'whatsapp' 
-                      ? 'bg-green-50 border-green-200 group-hover:border-green-300' 
-                      : 'bg-blue-50 border-blue-200 group-hover:border-blue-300'
-                  }`}>
+                  <div
+                    className={`p-3 rounded-lg border-2 border-dashed transition-colors duration-200 ${
+                      template.type === "whatsapp"
+                        ? "bg-green-50 border-green-200 group-hover:border-green-300"
+                        : "bg-blue-50 border-blue-200 group-hover:border-blue-300"
+                    }`}
+                  >
                     <div className="bg-white p-3 rounded-md shadow-sm border border-gray-100">
                       <p
                         className="text-xs text-gray-700 line-clamp-4 leading-relaxed"
@@ -320,12 +363,14 @@ export default function BroadcastTemplatePage() {
               </Card>
             ))}
           </div>
-          
+
           {/* Pagination */}
           {meta && meta.totalPages > 1 && (
             <div className="flex items-center justify-between pt-6 mt-6 border-t border-gray-200">
               <div className="text-sm text-gray-600">
-                Showing {((meta.page - 1) * meta.limit) + 1} to {Math.min(meta.page * meta.limit, meta.total)} of {meta.total} templates
+                Showing {(meta.page - 1) * meta.limit + 1} to{" "}
+                {Math.min(meta.page * meta.limit, meta.total)} of {meta.total}{" "}
+                templates
               </div>
               <div className="flex items-center gap-2">
                 <Button

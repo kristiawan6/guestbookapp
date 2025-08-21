@@ -61,14 +61,7 @@ export default function DashboardPage() {
       bgColor: "bg-purple-50",
       iconColor: "text-purple-600",
     },
-    {
-      title: "Deleted Guests",
-      value: statistics?.deletedGuests || 0,
-      icon: UserX,
-      color: "from-red-500 to-red-600",
-      bgColor: "bg-red-50",
-      iconColor: "text-red-600",
-    },
+
   ];
 
   // Chart data from backend

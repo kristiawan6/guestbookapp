@@ -119,14 +119,15 @@ async function createGuestHandler(
   }
 
   try {
-    await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, secret);
+    const userId = payload.userId as string;
     const body = await req.json();
     const validation = guestSchema.safeParse(body);
     if (!validation.success) {
       return apiResponse("error", "Invalid input", null, validation.error.errors, null, 400);
     }
     const { eventId } = await params;
-    const guest = await createGuest(eventId, validation.data);
+    const guest = await createGuest(eventId, validation.data, userId);
     
     // Emit real-time update for guest creation
     emitGuestUpdate({

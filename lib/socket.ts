@@ -20,6 +20,14 @@ export interface WhatsAppStatusUpdateEvent {
   timestamp: string;
 }
 
+// Email status update event interface
+export interface EmailStatusUpdateEvent {
+  guestId: string;
+  eventId: string;
+  status: 'NotSent' | 'Sent' | 'Read';
+  timestamp: string;
+}
+
 // Guest update event interface
 export interface GuestUpdateEvent {
   guestId: string;
@@ -31,6 +39,7 @@ export interface GuestUpdateEvent {
 // Socket events interface
 export interface SocketEvents {
   'whatsapp-status-update': WhatsAppStatusUpdateEvent;
+  'email-status-update': EmailStatusUpdateEvent;
   'guest-update': GuestUpdateEvent;
   'join-event': string;
   'leave-event': string;
@@ -101,6 +110,15 @@ export const emitGuestUpdate = (data: GuestUpdateEvent) => {
     // Emit to event-specific room
     io.to(`event-${data.eventId}`).emit('guest-update', data);
     console.log('Guest update emitted to event room:', data);
+  }
+};
+
+// Emit email status update to event-specific room
+export const emitEmailStatusUpdate = (data: EmailStatusUpdateEvent) => {
+  if (io) {
+    // Emit to event-specific room
+    io.to(`event-${data.eventId}`).emit('email-status-update', data);
+    console.log('Email status update emitted to event room:', data);
   }
 };
 

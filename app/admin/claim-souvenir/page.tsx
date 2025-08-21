@@ -9,6 +9,7 @@ import {
   Search,
   Gift,
   Package,
+  Package2,
   Activity,
   TrendingUp,
 } from "lucide-react";
@@ -21,10 +22,12 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useStatistics } from "@/hooks/use-statistics";
 import Swal from "sweetalert2";
 import * as XLSX from "xlsx";
@@ -171,54 +174,149 @@ export default function ClaimSouvenirPage() {
                     <Plus className="mr-2 h-4 w-4" /> <span className="sm:hidden">Add</span><span className="hidden sm:inline">Add Item</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>
-                      {selectedItem ? "Edit" : "Add"} Claimable Item
-                    </DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleSaveItem}>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right" required>
-                          Name
-                        </Label>
-                        <Input
-                          id="name"
-                          name="name"
-                          defaultValue={selectedItem?.name}
-                          className="col-span-3"
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="description" className="text-right">
-                          Description
-                        </Label>
-                        <Input
-                          id="description"
-                          name="description"
-                          defaultValue={selectedItem?.description}
-                          className="col-span-3"
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label
-                          htmlFor="totalQuantity"
-                          className="text-right"
-                          required
-                        >
-                          Total Quantity
-                        </Label>
-                        <Input
-                          id="totalQuantity"
-                          name="totalQuantity"
-                          type="number"
-                          defaultValue={selectedItem?.totalQuantity}
-                          className="col-span-3"
-                        />
-                      </div>
+                <DialogContent className="max-w-2xl p-0 overflow-hidden">
+                  <div className="bg-gradient-to-r from-emerald-500 to-green-600 p-6 text-white">
+                    <DialogHeader>
+                      <DialogTitle className="text-2xl font-bold flex items-center gap-3">
+                        <div className="bg-white/20 rounded-full p-2">
+                          <Gift className="h-6 w-6" />
+                        </div>
+                        <div>
+                          <div>{selectedItem ? "Edit" : "Add"} Claimable Item</div>
+                          <div className="text-sm font-normal opacity-90 mt-1">
+                            {selectedItem
+                              ? "Update item details"
+                              : "Add a new claimable item to your system"}
+                          </div>
+                        </div>
+                      </DialogTitle>
+                      {selectedItem && (
+                        <div className="flex items-center gap-2 mt-4">
+                          <Badge
+                            variant="secondary"
+                            className="bg-white/20 text-white border-white/30"
+                          >
+                            Item ID: {selectedItem.id}
+                          </Badge>
+                          <Badge
+                            variant="default"
+                            className="bg-blue-500 text-white"
+                          >
+                            {selectedItem.remainingQuantity} / {selectedItem.totalQuantity} Available
+                          </Badge>
+                        </div>
+                      )}
+                    </DialogHeader>
+                  </div>
+
+                  <form
+                    key={selectedItem ? "edit-item-form" : "add-item-form"}
+                    onSubmit={handleSaveItem}
+                    className="p-6"
+                  >
+                    <div className="space-y-6">
+                      <Card className="border-gray-200">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <Package className="h-4 w-4 text-blue-600" />
+                            <Label
+                              htmlFor="name"
+                              className="text-sm font-semibold text-gray-700"
+                            >
+                              Item Name *
+                            </Label>
+                          </div>
+                          <Input
+                            id="name"
+                            name="name"
+                            defaultValue={selectedItem?.name}
+                            className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                            placeholder="Enter item name"
+                            required
+                          />
+                        </CardContent>
+                      </Card>
+
+                      <Card className="border-gray-200">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <Package className="h-4 w-4 text-emerald-500" />
+                            <Label
+                              htmlFor="description"
+                              className="text-sm font-semibold text-gray-700"
+                            >
+                              Description
+                            </Label>
+                          </div>
+                          <Input
+                            id="description"
+                            name="description"
+                            defaultValue={selectedItem?.description}
+                            className="border-gray-200 focus:border-emerald-500 focus:ring-emerald-500"
+                            placeholder="Enter item description"
+                          />
+                        </CardContent>
+                      </Card>
+
+                      <Card className="border-gray-200">
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <Package2 className="h-4 w-4 text-purple-600" />
+                            <Label
+                              htmlFor="totalQuantity"
+                              className="text-sm font-semibold text-gray-700"
+                            >
+                              Total Quantity *
+                            </Label>
+                          </div>
+                          <Input
+                            id="totalQuantity"
+                            name="totalQuantity"
+                            type="number"
+                            min="1"
+                            defaultValue={selectedItem?.totalQuantity}
+                            className="border-gray-200 focus:border-purple-500 focus:ring-purple-500"
+                            placeholder="Enter total quantity"
+                            required
+                          />
+                          <p className="text-xs text-gray-500 mt-2">
+                            Set the total number of items available for claiming
+                          </p>
+                        </CardContent>
+                      </Card>
                     </div>
-                    <Button type="submit">Save</Button>
+
+                    <DialogFooter className="mt-8 pt-6 border-t border-gray-200">
+                      <div className="flex items-center justify-between w-full">
+                        <div className="text-sm text-gray-500">
+                          {selectedItem ? "Update" : "Create"} item with the
+                          information above
+                        </div>
+                        <div className="flex gap-3">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedItem(null);
+                              setIsDialogOpen(false);
+                            }}
+                            className="hover:bg-gray-50"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="submit"
+                            className="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white border-0"
+                          >
+                            {selectedItem ? (
+                              <><Pencil className="mr-2 h-4 w-4" /> Update Item</>
+                            ) : (
+                              <><Plus className="mr-2 h-4 w-4" /> Create Item</>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogFooter>
                   </form>
                 </DialogContent>
               </Dialog>
@@ -242,10 +340,6 @@ export default function ClaimSouvenirPage() {
               <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
                 <Package className="h-6 w-6 text-blue-600" />
               </div>
-              <div className="flex items-center gap-1 text-xs font-medium text-green-600">
-                <TrendingUp className="h-3 w-3" />
-                +12%
-              </div>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Total Items</p>
@@ -259,10 +353,6 @@ export default function ClaimSouvenirPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
                 <BarChart2 className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="flex items-center gap-1 text-xs font-medium text-green-600">
-                <TrendingUp className="h-3 w-3" />
-                +8%
               </div>
             </div>
             <div>
@@ -278,10 +368,6 @@ export default function ClaimSouvenirPage() {
               <div className="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center">
                 <Gift className="h-6 w-6 text-emerald-600" />
               </div>
-              <div className="flex items-center gap-1 text-xs font-medium text-green-600">
-                <TrendingUp className="h-3 w-3" />
-                +15%
-              </div>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Claimed</p>
@@ -295,10 +381,6 @@ export default function ClaimSouvenirPage() {
             <div className="flex items-center justify-between mb-4">
               <div className="h-12 w-12 rounded-lg bg-orange-100 flex items-center justify-center">
                 <Activity className="h-6 w-6 text-orange-600" />
-              </div>
-              <div className="flex items-center gap-1 text-xs font-medium text-red-600">
-                <TrendingUp className="h-3 w-3 rotate-180" />
-                -5%
               </div>
             </div>
             <div>

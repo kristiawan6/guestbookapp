@@ -10,6 +10,7 @@ datasource db {
 
 model User {
   id               String                 @id @default(cuid())
+  fullname         String
   username         String                 @unique
   password         String
   role             UserRole
@@ -20,6 +21,7 @@ model User {
   totpSecret       String?
   ClaimTransaction ClaimTransaction[]
   events           UserEventAssociation[]
+  guests           Guest[]
 }
 
 model Event {
@@ -81,12 +83,18 @@ model Guest {
   qrCode            String?            @unique
   status            GuestStatus        @default(Invited)
   whatsappStatus    WhatsAppStatus     @default(NotSent)
+  signed            String?            @default("Not Sign")
+  emailStatus       EmailStatus        @default(NotSent)
+  webStatus         String?            @default("Viewed")
+  dateArrival       DateTime?
+  createdBy         String?
   createdAt         DateTime           @default(now())
   isDeleted         Boolean            @default(false)
   updatedAt         DateTime           @updatedAt
   claimTransactions ClaimTransaction[]
   event             Event              @relation(fields: [eventId], references: [id])
   guestCategory     GuestCategory?     @relation(fields: [guestCategoryId], references: [id])
+  creator           User?              @relation(fields: [createdBy], references: [id])
   messages          Message[]
   whatsappMessages  WhatsAppMessage[]
 
@@ -185,6 +193,14 @@ enum GuestStatus {
 }
 
 enum WhatsAppStatus {
+  NotSent
+  Sent
+  Delivered
+  Read
+  Failed
+}
+
+enum EmailStatus {
   NotSent
   Sent
   Delivered

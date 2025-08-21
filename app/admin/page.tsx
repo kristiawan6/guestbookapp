@@ -8,9 +8,7 @@ import {
   BarChart, 
   Users, 
   Calendar, 
-  UserCheck, 
   UserX, 
-  TrendingUp,
   Activity,
   Gift
 } from "lucide-react";
@@ -52,8 +50,6 @@ export default function AdminDashboardPage() {
       color: "bg-gradient-to-r from-blue-500 to-blue-600",
       bgColor: "bg-blue-100",
       textColor: "text-blue-600",
-      change: "+12%",
-      changeType: "increase"
     },
     {
       title: "Total Guests",
@@ -62,28 +58,6 @@ export default function AdminDashboardPage() {
       color: "bg-gradient-to-r from-purple-500 to-purple-600",
       bgColor: "bg-purple-100",
       textColor: "text-purple-600",
-      change: "+8%",
-      changeType: "increase"
-    },
-    {
-      title: "Active Guests",
-      value: statistics?.activeGuests || 0,
-      icon: UserCheck,
-      color: "bg-gradient-to-r from-emerald-500 to-emerald-600",
-      bgColor: "bg-emerald-100",
-      textColor: "text-emerald-600",
-      change: "+15%",
-      changeType: "increase"
-    },
-    {
-      title: "Deleted Guests",
-      value: statistics?.deletedGuests || 0,
-      icon: UserX,
-      color: "bg-gradient-to-r from-red-500 to-red-600",
-      bgColor: "bg-red-100",
-      textColor: "text-red-600",
-      change: "-3%",
-      changeType: "decrease"
     },
   ];
 
@@ -116,14 +90,6 @@ export default function AdminDashboardPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div className={`h-12 w-12 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
                     <IconComponent className={`h-6 w-6 ${stat.textColor}`} />
-                  </div>
-                  <div className={`flex items-center gap-1 text-xs font-medium ${
-                    stat.changeType === 'increase' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    <TrendingUp className={`h-3 w-3 ${
-                      stat.changeType === 'decrease' ? 'rotate-180' : ''
-                    }`} />
-                    {stat.change}
                   </div>
                 </div>
                 <div>

@@ -14,9 +14,11 @@ interface GuestData {
   guestCategoryId?: string;
   notes?: string;
   whatsappStatus?: WhatsAppStatus;
+  dateArrival?: Date;
+  createdBy?: string;
 }
 
-export const createGuest = async (eventId: string, data: GuestData) => {
+export const createGuest = async (eventId: string, data: GuestData, userId?: string) => {
   const {
     name,
     email,
@@ -28,11 +30,43 @@ export const createGuest = async (eventId: string, data: GuestData) => {
     guestCategoryId,
     notes,
     whatsappStatus,
+    dateArrival,
+    createdBy,
   } = data;
 
   // Validate required fields
   if (!name || !email || !phoneNumber || !guestCategoryId) {
     throw new Error("Missing required fields: Fullname, Email Address, Phone Number, and Guest Category are required");
+  }
+
+  // Check for duplicate phone number in this event
+  if (phoneNumber) {
+    const existingGuestByPhone = await prisma.guest.findFirst({
+      where: {
+        phoneNumber,
+        eventId,
+        isDeleted: false
+      }
+    });
+    
+    if (existingGuestByPhone) {
+      throw new Error(`A guest with phone number ${phoneNumber} already exists for this event`);
+    }
+  }
+
+  // Check for duplicate email in this event
+  if (email) {
+    const existingGuestByEmail = await prisma.guest.findFirst({
+      where: {
+        email,
+        eventId,
+        isDeleted: false
+      }
+    });
+    
+    if (existingGuestByEmail) {
+      throw new Error(`A guest with email ${email} already exists for this event`);
+    }
   }
 
   // Check if guest category exists and has quota
@@ -61,8 +95,9 @@ export const createGuest = async (eventId: string, data: GuestData) => {
       session,
       tableNumber,
       notes,
-      // Set default WhatsApp status
-      whatsappStatus: whatsappStatus || WhatsAppStatus.NotSent,
+      status: 'Invited', 
+      whatsappStatus: whatsappStatus || WhatsAppStatus.NotSent, // Default: "Not Sent"
+      // Note: createdBy, signed, emailStatus, webStatus, and dateArrival have database defaults and will be set automatically
       event: {
         connect: {
           id: eventId,
@@ -100,12 +135,13 @@ export const getGuests = async (
 ) => {
   const where: {
     eventId: string;
+    isDeleted: boolean;
     OR?: (
       | { name: { contains: string; mode: "insensitive" } }
       | { email: { contains: string; mode: "insensitive" } }
       | { phoneNumber: { contains: string; mode: "insensitive" } }
     )[];
-  } = { eventId };
+  } = { eventId, isDeleted: false };
   if (search) {
     where.OR = [
       { name: { contains: search, mode: "insensitive" } },
@@ -135,11 +171,13 @@ export const getGuests = async (
             id: true,
             name: true,
           },
-        },
+        }
       },
     }),
     prisma.guest.count({ where }),
   ]);
+
+  // TODO: Add user enrichment once Prisma client is properly regenerated
 
   return {
     data: guests,

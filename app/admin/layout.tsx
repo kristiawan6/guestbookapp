@@ -23,9 +23,6 @@ import {
   LogOut,
   Menu,
   Shield,
-  Bell,
-  Search,
-  Settings,
   User,
 } from "lucide-react";
 import {
@@ -106,9 +103,9 @@ function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-gray-200/60 bg-white/80 backdrop-blur-md">
-      <div className="flex h-16 items-center gap-2 sm:gap-4 px-4 sm:px-6">
+      <div className="flex h-16 items-center justify-between px-4 sm:px-6">
         {/* Left Section */}
-        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
           <Button 
             variant="ghost" 
             size="icon" 
@@ -148,49 +145,8 @@ function Header() {
           )}
         </div>
 
-        {/* Center Section - Search */}
-        <div className="hidden md:flex flex-1 justify-center">
-          <div className="relative w-full max-w-lg">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder="Search guests, events, templates..."
-              className="w-full pl-10 bg-gray-50/50 border-gray-200 focus:border-blue-500 transition-colors"
-            />
-          </div>
-        </div>
-
         {/* Right Section */}
-        <div className="flex items-center gap-1 sm:gap-3">
-          {/* Mobile Search Button */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="md:hidden h-9 w-9 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            <Search className="h-4 w-4 text-gray-600" />
-          </Button>
-          
-          {/* Notifications */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="relative h-9 w-9 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            <Bell className="h-4 w-4 text-gray-600" />
-            <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">
-              3
-            </span>
-          </Button>
-
-          {/* Settings */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="hidden sm:flex h-9 w-9 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            <Settings className="h-4 w-4 text-gray-600" />
-          </Button>
-
+        <div className="flex items-center justify-end flex-shrink-0">
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -202,12 +158,12 @@ function Header() {
                   <Avatar className="h-6 w-6 sm:h-7 sm:w-7 ring-2 ring-blue-500/20">
                     <AvatarImage src="https://github.com/shadcn.png" />
                     <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xs sm:text-sm font-semibold">
-                      {user?.username?.charAt(0).toUpperCase() || "U"}
+                      {user?.fullname?.charAt(0).toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="hidden lg:block text-left">
                     <div className="text-sm font-medium text-gray-900">
-                      {user?.username || "User"}
+                      {user?.fullname || "User"}
                     </div>
                     <div className="text-xs text-gray-500 capitalize">
                       {user?.role?.toLowerCase() || "Admin"}
@@ -221,7 +177,7 @@ function Header() {
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">
-                    {user?.username || "User"}
+                    {user?.fullname || "User"}
                   </p>
                   <p className="text-xs leading-none text-muted-foreground">
                     {user?.email || user?.events?.[0]?.event?.name || "user@example.com"}
@@ -229,14 +185,12 @@ function Header() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer">
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer">
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
+              <Link href="/admin/profile">
+                <DropdownMenuItem className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+              </Link>
               <DropdownMenuSeparator />
               <form action={logout}>
                 <button type="submit" className="w-full text-left">

@@ -86,10 +86,19 @@ export default function ClaimDetail({
       if (data) {
         let guestId = data;
         try {
-          const url = new URL(data);
-          guestId = url.searchParams.get("c") || data;
+          // First try to parse as JSON (for QR codes with guest data)
+          const parsedData = JSON.parse(data);
+          if (parsedData && parsedData.id) {
+            guestId = parsedData.id;
+          }
         } catch {
-          // Not a valid URL, assume it's a raw ID
+          // Not JSON, try URL parsing
+          try {
+            const url = new URL(data);
+            guestId = url.searchParams.get("c") || data;
+          } catch {
+            // Not a valid URL, assume it's a raw ID
+          }
         }
 
         try {

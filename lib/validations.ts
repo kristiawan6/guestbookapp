@@ -51,6 +51,7 @@ export const claimableItemSchema = z.object({
 
 export const userSchema = z.object({
   username: z.string().min(1, "Username is required"),
+  fullname: z.string().min(1, "Full name is required"),
   email: z.string().email("Invalid email address"),
   password: z
     .string()

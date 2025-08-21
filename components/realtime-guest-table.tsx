@@ -48,6 +48,11 @@ interface Guest {
   tableNumber?: string;
   status: 'Pending' | 'Attended' | 'NotAttended';
   whatsappStatus: 'NotSent' | 'Sent' | 'Delivered' | 'Read' | 'Failed';
+  signed?: string;
+  emailStatus?: string;
+  webStatus?: string;
+  dateArrival?: string | null;
+  createdBy?: string | null;
   guestCategory?: {
     id: string;
     name: string;

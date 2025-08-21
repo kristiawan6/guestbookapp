@@ -5,6 +5,7 @@ import { UserRole } from "@prisma/client";
 
 interface UserData {
   username: string;
+  fullname: string;
   email: string;
   password?: string;
   role: UserRole;
@@ -13,9 +14,9 @@ interface UserData {
 }
 
 export const createUser = async (data: UserData) => {
-  const { username, email, password, role, isActive, eventIds } = data;
+  const { username, email, password, role, isActive, eventIds , fullname} = data;
 
-  if (!username || !email || !password || !role) {
+  if (!username || !email || !password || !role || !fullname) {
     throw new Error("Missing required fields");
   }
 
@@ -24,6 +25,7 @@ export const createUser = async (data: UserData) => {
   const user = await prisma.user.create({
     data: {
       username,
+      fullname,
       email,
       password: hashedPassword,
       role: role as UserRole,
@@ -70,6 +72,7 @@ export const getUsers = async (
       select: {
         id: true,
         username: true,
+        fullname: true,
         email: true,
         role: true,
         isActive: true,
@@ -98,12 +101,13 @@ export const getUsers = async (
 };
 
 export const updateUser = async (id: string, data: Partial<UserData>) => {
-  const { username, email, role, isActive, eventIds } = data;
+  const { username, fullname, email, role, isActive, eventIds } = data;
 
   const updatedUser = await prisma.user.update({
     where: { id },
     data: {
       username,
+      fullname,
       email,
       role: role as UserRole,
       isActive,

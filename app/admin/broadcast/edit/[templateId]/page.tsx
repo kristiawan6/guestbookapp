@@ -7,7 +7,7 @@ import BroadcastTemplateForm from "@/components/ui/broadcast-template-form";
 
 export default function EditBroadcastTemplatePage() {
   const params = useParams();
-  const templateId = params.templateId as string;
+  const templateId = params?.templateId as string;
   const { selectedEventId } = useStatistics();
   const [template, setTemplate] = useState<any>(null);
 

@@ -59,12 +59,12 @@ export async function POST(
       );
     }
 
-    let recipients: { email: string | null; phoneNumber: string | null }[] = [];
+    let recipients: { id: string; email: string | null; phoneNumber: string | null }[] = [];
 
     if (recipientType === "all") {
       recipients = await prisma.guest.findMany({
         where: { eventId: (await params).eventId },
-        select: { email: true, phoneNumber: true },
+        select: { id: true, email: true, phoneNumber: true },
       });
     } else if (recipientType === "category") {
       recipients = await prisma.guest.findMany({
@@ -72,7 +72,7 @@ export async function POST(
           eventId: (await params).eventId,
           guestCategoryId: { in: recipientIds },
         },
-        select: { email: true, phoneNumber: true },
+        select: { id: true, email: true, phoneNumber: true },
       });
     } else if (recipientType === "individual") {
       recipients = await prisma.guest.findMany({
@@ -80,7 +80,7 @@ export async function POST(
           eventId: (await params).eventId,
           id: { in: recipientIds },
         },
-        select: { email: true, phoneNumber: true },
+        select: { id: true, email: true, phoneNumber: true },
       });
     }
 
@@ -207,13 +207,14 @@ export async function POST(
                 recipient.email,
                 template.subject || template.name,
                 template.content,
-                [attachment]
+                [attachment],
+                recipient.id
               );
               console.log(`Email sent result: ${emailResult}`);
             } catch (error) {
               console.error(`Failed to send email with attachment to ${recipient.email}:`, error);
               // Fallback to sending email without attachment
-              await sendEmail(recipient.email, template.subject || template.name, template.content);
+              await sendEmail(recipient.email, template.subject || template.name, template.content, undefined, recipient.id);
             }
           }
         }
@@ -221,7 +222,7 @@ export async function POST(
         // Regular email without any attachment
         for (const recipient of recipients) {
           if (recipient.email) {
-            await sendEmail(recipient.email, template.subject || template.name, template.content);
+            await sendEmail(recipient.email, template.subject || template.name, template.content, undefined, recipient.id);
           }
         }
       }

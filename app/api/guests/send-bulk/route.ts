@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
               } catch (templateError) {
                 console.error('Error reading template:', templateError);
                 // Fallback to regular email without QR card
-                await sendEmail(guest.email, personalizedSubject, personalizedContent);
+                await sendEmail(guest.email, personalizedSubject, personalizedContent, undefined, guest.id);
                 successCount++;
                 continue;
               }
@@ -262,11 +262,12 @@ export async function POST(req: NextRequest) {
                 personalizedSubject,
                 personalizedContent,
                 cloudinaryResult.secure_url,
-                guest.name
+                guest.name,
+                guest.id
               );
             } else {
               // Send regular email without QR card
-              await sendEmail(guest.email, personalizedSubject, personalizedContent);
+              await sendEmail(guest.email, personalizedSubject, personalizedContent, undefined, guest.id);
             }
             
             successCount++;

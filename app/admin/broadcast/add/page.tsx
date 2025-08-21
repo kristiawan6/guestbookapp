@@ -6,7 +6,7 @@ import { Suspense } from "react";
 
 function AddBroadcastTemplateContent() {
   const searchParams = useSearchParams();
-  const templateType = searchParams.get('type') || 'whatsapp';
+  const templateType = searchParams?.get('type') || 'whatsapp';
   
   return <BroadcastTemplateForm templateType={templateType} />;
 }

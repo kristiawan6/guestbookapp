@@ -432,7 +432,6 @@ export default function UserManagementPage() {
               <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
                 <Users className="h-6 w-6 text-blue-600" />
               </div>
-              <div className="text-xs font-medium text-green-600">+15%</div>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Total Users</p>
@@ -447,7 +446,6 @@ export default function UserManagementPage() {
               <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
                 <UserCheck className="h-6 w-6 text-green-600" />
               </div>
-              <div className="text-xs font-medium text-green-600">+8%</div>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Active Users</p>
@@ -462,7 +460,6 @@ export default function UserManagementPage() {
               <div className="h-12 w-12 rounded-lg bg-red-100 flex items-center justify-center">
                 <UserX className="h-6 w-6 text-red-600" />
               </div>
-              <div className="text-xs font-medium text-red-600">-2%</div>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Inactive Users</p>
@@ -477,7 +474,6 @@ export default function UserManagementPage() {
               <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
                 <Shield className="h-6 w-6 text-purple-600" />
               </div>
-              <div className="text-xs font-medium text-green-600">+3%</div>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Admin Users</p>

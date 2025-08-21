@@ -138,9 +138,140 @@ export const getGuestStatistics = async (eventId: string) => {
 
   // Attendance distribution for pie chart
   const attendanceDistribution = [
-    { name: 'Attended', value: attendedGuests, color: '#10B981' },
-    { name: 'Not Attended', value: notAttendedGuests, color: '#EF4444' },
+    { name: 'Present', value: attendedGuests, color: '#10B981' },
+    { name: 'Absent', value: notAttendedGuests, color: '#EF4444' },
+    { name: 'Virtual', value: 0, color: '#3B82F6' }, // Placeholder for virtual attendance
   ];
+
+  // RSVP Status distribution (using actual GuestStatus enum values)
+  const attendedGuestsRSVP = await prisma.guest.count({
+    where: {
+      eventId,
+      isDeleted: false,
+      status: 'Attended',
+    },
+  });
+
+  const cancelledGuests = await prisma.guest.count({
+    where: {
+      eventId,
+      isDeleted: false,
+      status: 'Cancelled',
+    },
+  });
+
+  const invitedGuests = await prisma.guest.count({
+    where: {
+      eventId,
+      isDeleted: false,
+      status: 'Invited',
+    },
+  });
+
+  const rsvpDistribution = [
+    { name: 'Confirmed', value: attendedGuestsRSVP, color: '#10B981' },
+    { name: 'Declined', value: cancelledGuests, color: '#EF4444' },
+    { name: 'Virtual Only', value: 0, color: '#8B5CF6' }, // Not available in current schema
+    { name: 'No Response', value: invitedGuests, color: '#9CA3AF' },
+  ];
+
+  // WhatsApp Status distribution
+  const whatsappSent = await prisma.guest.count({
+    where: {
+      eventId,
+      isDeleted: false,
+      whatsappStatus: 'Sent',
+    },
+  });
+
+  const whatsappDelivered = await prisma.guest.count({
+    where: {
+      eventId,
+      isDeleted: false,
+      whatsappStatus: 'Delivered',
+    },
+  });
+
+  const whatsappRead = await prisma.guest.count({
+    where: {
+      eventId,
+      isDeleted: false,
+      whatsappStatus: 'Read',
+    },
+  });
+
+  const whatsappNotSent = await prisma.guest.count({
+    where: {
+      eventId,
+      isDeleted: false,
+      whatsappStatus: 'NotSent',
+    },
+  });
+
+  const whatsappFailed = await prisma.guest.count({
+    where: {
+      eventId,
+      isDeleted: false,
+      whatsappStatus: 'Failed',
+    },
+  });
+
+  const whatsappDistribution = [
+    { name: 'Read', value: whatsappRead, color: '#10B981' },
+    { name: 'Delivered', value: whatsappDelivered, color: '#3B82F6' },
+    { name: 'Sent', value: whatsappSent, color: '#F59E0B' },
+    { name: 'Not Sent', value: whatsappNotSent, color: '#9CA3AF' },
+    { name: 'Failed', value: whatsappFailed, color: '#EF4444' },
+  ].filter(item => item.value > 0); // Only show statuses with data
+
+  // Email Status distribution
+  const emailSent = await prisma.guest.count({
+    where: {
+      eventId,
+      isDeleted: false,
+      emailStatus: 'Sent',
+    },
+  });
+
+  const emailDelivered = await prisma.guest.count({
+    where: {
+      eventId,
+      isDeleted: false,
+      emailStatus: 'Delivered',
+    },
+  });
+
+  const emailRead = await prisma.guest.count({
+    where: {
+      eventId,
+      isDeleted: false,
+      emailStatus: 'Read',
+    },
+  });
+
+  const emailNotSent = await prisma.guest.count({
+    where: {
+      eventId,
+      isDeleted: false,
+      emailStatus: 'NotSent',
+    },
+  });
+
+  const emailFailed = await prisma.guest.count({
+    where: {
+      eventId,
+      isDeleted: false,
+      emailStatus: 'Failed',
+    },
+  });
+
+  const emailDistribution = [
+    { name: 'Read', value: emailRead, color: '#10B981' },
+    { name: 'Delivered', value: emailDelivered, color: '#3B82F6' },
+    { name: 'Sent', value: emailSent, color: '#F59E0B' },
+    { name: 'Not Sent', value: emailNotSent, color: '#9CA3AF' },
+    { name: 'Failed', value: emailFailed, color: '#EF4444' },
+  ].filter(item => item.value > 0); // Only show statuses with data
 
   return {
     totalGuests,
@@ -158,5 +289,8 @@ export const getGuestStatistics = async (eventId: string) => {
     categoryDistribution,
     monthlyTrends,
     attendanceDistribution,
+    rsvpDistribution,
+    whatsappDistribution,
+    emailDistribution,
   };
 };

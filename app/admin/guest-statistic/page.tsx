@@ -47,28 +47,6 @@ export default function GuestStatisticPage() {
       color: "bg-gradient-to-r from-purple-500 to-purple-600",
       bgColor: "bg-purple-100",
       textColor: "text-purple-600",
-      change: "+12%",
-      changeType: "increase"
-    },
-    {
-      title: "Active Guests",
-      value: statistics?.activeGuests || 0,
-      icon: UserCheck,
-      color: "bg-gradient-to-r from-emerald-500 to-emerald-600",
-      bgColor: "bg-emerald-100",
-      textColor: "text-emerald-600",
-      change: "+8%",
-      changeType: "increase"
-    },
-    {
-      title: "Deleted Guests",
-      value: statistics?.deletedGuests || 0,
-      icon: UserX,
-      color: "bg-gradient-to-r from-red-500 to-red-600",
-      bgColor: "bg-red-100",
-      textColor: "text-red-600",
-      change: "-3%",
-      changeType: "decrease"
     },
     {
       title: "Attended Guests",
@@ -77,8 +55,6 @@ export default function GuestStatisticPage() {
       color: "bg-gradient-to-r from-green-500 to-green-600",
       bgColor: "bg-green-100",
       textColor: "text-green-600",
-      change: "+15%",
-      changeType: "increase"
     },
     {
       title: "Attendance Rate",
@@ -87,9 +63,7 @@ export default function GuestStatisticPage() {
       color: "bg-gradient-to-r from-blue-500 to-blue-600",
       bgColor: "bg-blue-100",
       textColor: "text-blue-600",
-      change: "+5%",
-      changeType: "increase",
-      suffix: "%"
+      suffix: "%",
     },
   ];
 
@@ -103,16 +77,33 @@ export default function GuestStatisticPage() {
     { month: 'Jun', guests: statistics?.totalGuests || 250, active: statistics?.activeGuests || 200, attended: statistics?.attendedGuests || 180 },
   ];
 
-  const attendanceData: CategoryDataItem[] = statistics?.attendanceDistribution || [
-    { name: 'Attended', value: 180, color: '#10B981' },
-    { name: 'Not Attended', value: 70, color: '#EF4444' },
-  ];
+  // Dynamic pie chart data - no hardcoded fallbacks
+  const attendanceData: CategoryDataItem[] = statistics?.attendanceDistribution || [];
+  const categoryData: CategoryDataItem[] = statistics?.categoryDistribution || [];
+  const rsvpData: CategoryDataItem[] = statistics?.rsvpDistribution || [];
+  const whatsappData: CategoryDataItem[] = statistics?.whatsappDistribution || [];
+  const emailData: CategoryDataItem[] = statistics?.emailDistribution || [];
 
-  const categoryData: CategoryDataItem[] = statistics?.categoryDistribution || [
-    { name: 'VIP', value: 30, color: '#8B5CF6' },
-    { name: 'Regular', value: 45, color: '#10B981' },
-    { name: 'Premium', value: 25, color: '#3B82F6' },
-  ];
+  // Choose which data to display for the two pie charts
+  // First pie chart: RSVP Status (more meaningful than attendance)
+  const firstPieChartData = rsvpData.length > 0 ? rsvpData : attendanceData;
+  const firstPieChartTitle = rsvpData.length > 0 ? "RSVP Status" : "Attendance Status";
+  const firstPieChartDescription = rsvpData.length > 0 ? "Guest response distribution" : "Distribution of guest attendance";
+
+  // Second pie chart: Choose between categories, WhatsApp, or Email based on data availability
+  let secondPieChartData = categoryData;
+  let secondPieChartTitle = "Guest Categories";
+  let secondPieChartDescription = "Distribution by guest category";
+
+  if (categoryData.length === 0 && whatsappData.length > 0) {
+    secondPieChartData = whatsappData;
+    secondPieChartTitle = "WhatsApp Status";
+    secondPieChartDescription = "WhatsApp message delivery status";
+  } else if (categoryData.length === 0 && whatsappData.length === 0 && emailData.length > 0) {
+    secondPieChartData = emailData;
+    secondPieChartTitle = "Email Status";
+    secondPieChartDescription = "Email delivery and read status";
+  }
 
   return (
     <div className="space-y-6">
@@ -143,14 +134,6 @@ export default function GuestStatisticPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div className={`h-12 w-12 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
                     <IconComponent className={`h-6 w-6 ${stat.textColor}`} />
-                  </div>
-                  <div className={`flex items-center gap-1 text-xs font-medium ${
-                    stat.changeType === 'increase' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    <TrendingUp className={`h-3 w-3 ${
-                      stat.changeType === 'decrease' ? 'rotate-180' : ''
-                    }`} />
-                    {stat.change}
                   </div>
                 </div>
                 <div>
@@ -229,79 +212,97 @@ export default function GuestStatisticPage() {
           </CardContent>
         </Card>
 
-        {/* Attendance Distribution */}
+        {/* First Pie Chart - Dynamic */}
         <Card className="border-0 shadow-lg">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900">Attendance Status</CardTitle>
-            <p className="text-sm text-gray-600">Distribution of guest attendance</p>
+            <CardTitle className="text-lg font-semibold text-gray-900">{firstPieChartTitle}</CardTitle>
+            <p className="text-sm text-gray-600">{firstPieChartDescription}</p>
           </CardHeader>
           <CardContent>
             <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={attendanceData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {attendanceData.map((entry: CategoryDataItem, index: number) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                  />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+              {firstPieChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={firstPieChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {firstPieChartData.map((entry: CategoryDataItem, index: number) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  <div className="text-center">
+                    <p className="text-lg font-medium">No Data Available</p>
+                    <p className="text-sm">No guest data to display for this chart</p>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Guest Categories Distribution */}
+      {/* Second Pie Chart - Dynamic */}
         <Card className="border-0 shadow-lg">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-900">Guest Categories</CardTitle>
-            <p className="text-sm text-gray-600">Distribution by guest category</p>
+            <CardTitle className="text-lg font-semibold text-gray-900">{secondPieChartTitle}</CardTitle>
+            <p className="text-sm text-gray-600">{secondPieChartDescription}</p>
           </CardHeader>
           <CardContent>
             <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {categoryData.map((entry: CategoryDataItem, index: number) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: 'white',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '8px',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                    }}
-                  />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+              {secondPieChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={secondPieChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={100}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {secondPieChartData.map((entry: CategoryDataItem, index: number) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '8px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                      }}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  <div className="text-center">
+                    <p className="text-lg font-medium">No Data Available</p>
+                    <p className="text-sm">No guest data to display for this chart</p>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

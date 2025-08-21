@@ -12,7 +12,14 @@
     "test:watch": "jest --watch",
     "prisma:seed": "ts-node --compiler-options '{\"module\":\"commonjs\"}' prisma/seed.ts",
     "socket": "ts-node socket-server.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "type-check": "tsc --noEmit",
+    "build:production": "./scripts/production-build.sh",
+    "db:migrate": "prisma migrate deploy",
+    "db:generate": "prisma generate",
+    "health-check": "curl -f http://localhost:3000/api/health || exit 1",
+    "analyze": "ANALYZE=true npm run build",
+    "security-audit": "npm audit --audit-level=high"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
@@ -121,6 +128,7 @@
     "tailwindcss": "^4",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.4",
     "tw-animate-css": "^1.3.5",
     "typescript": "^5"
   }

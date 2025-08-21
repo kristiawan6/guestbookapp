@@ -102,14 +102,10 @@ const BarcodeScanner = ({
       try {
         await scanner.render(handleSuccess, handleError);
         console.log("Scanner initialized successfully");
-        // Set loading to false after camera initializes
+        // Set loading to false immediately after scanner renders
         if (isMounted) {
-          setTimeout(() => {
-            if (isMounted) {
-              setIsLoading(false);
-              setError(null);
-            }
-          }, 1500);
+          setIsLoading(false);
+          setError(null);
         }
       } catch (error) {
         console.error("Failed to initialize scanner:", error);
@@ -122,7 +118,7 @@ const BarcodeScanner = ({
     };
 
     // Small delay to ensure DOM is ready
-    const timeoutId = setTimeout(initializeScanner, 200);
+    const timeoutId = setTimeout(initializeScanner, 100);
     
     return () => {
       isMounted = false;
